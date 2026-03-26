@@ -1,4 +1,4 @@
-# 📚 API Bibliothèque Sécurisée - Jour 3
+# 📚 API Bibliothèque
 
 Bienvenue dans la version finale et durcie de l'API de gestion de bibliothèque. Cette version met l'accent sur la **sécurité applicative**, la **gestion des sessions** et la **documentation automatisée**.
 
