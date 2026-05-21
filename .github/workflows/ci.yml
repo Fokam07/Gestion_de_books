@@ -1,11 +1,12 @@
-name: CI — API Bibliothèque
+name: CI
 
-# Déclenché à chaque push sur main ou à chaque Pull Request vers main
 on:
   push:
-    branches: [**]
+    branches:
+      - '**'
   pull_request:
-    branches: [**]
+    branches:
+      - main
 
 jobs:
   # ─────────────────────────────────────────────────────────────────────────────
