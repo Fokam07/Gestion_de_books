@@ -1,17 +1,27 @@
 # Dépendances
 node_modules/
+**/node_modules/
 
-# Variables d'environnement (Partout dans le projet)
+# Variables d'environnement
 .env
 .env.local
+.env*.local
 
-# Base de données Prisma (Pour tous les dossiers d'évaluation)
+# Base de données Prisma
 **/prisma/*.db
 **/prisma/*.db-journal
+
+# Next.js
+frontend/.next/
+frontend/out/
 
 # Logs
 npm-debug.log*
 yarn-error.log*
+.pnpm-debug.log*
 
-# OS spécifiques
+# OS
 .DS_Store
+
+frontend/
+.claude/

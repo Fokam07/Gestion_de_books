@@ -1,5 +1,7 @@
 import { Router } from 'express';
 import * as livreController from '../controllers/livreController.js';
+
+import * as exemplaireController from '../controllers/exemplaireController.js';
 import authenticate from '../middlewares/authenticate.js';
 import authorize from '../middlewares/authorize.js';
 
@@ -70,15 +72,59 @@ router.post('/', authenticate, livreController.postLivre);
  *       204:
  *         description: Supprimé
  */
-router.get('/:id', livreController.getLivres);
+router.get('/:id', livreController.getOneLivre);
 router.delete('/:id', authenticate, authorize('admin'), livreController.deleteLivre);
 
 /**
  * @swagger
- * /api/livres/{id}/emprunter:
+ * /api/livres/{livreId}/exemplaires:
+ *   get:
+ *     summary: Liste les exemplaires d'un livre
+ *     tags: [Exemplaires]
+ *     parameters:
+ *       - in: path
+ *         name: livreId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Succès
  *   post:
- *     summary: Emprunter un livre
- *     tags: [Livres]
+ *     summary: Ajouter un exemplaire à un livre (admin)
+ *     tags: [Exemplaires]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: livreId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - codeBarre
+ *             properties:
+ *               codeBarre:
+ *                 type: string
+ *     responses:
+ *       201:
+ *         description: Exemplaire créé
+ */
+router.get('/:livreId/exemplaires', exemplaireController.getExemplaires);
+router.post('/:livreId/exemplaires', authenticate, authorize('admin'), exemplaireController.creerExemplaire);
+
+/**
+ * @swagger
+ * /api/exemplaires/{id}/statut:
+ *   patch:
+ *     summary: Changer le statut d'un exemplaire (admin)
+ *     tags: [Exemplaires]
  *     security:
  *       - bearerAuth: []
  *     parameters:
@@ -87,10 +133,22 @@ router.delete('/:id', authenticate, authorize('admin'), livreController.deleteLi
  *         required: true
  *         schema:
  *           type: integer
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - statut
+ *             properties:
+ *               statut:
+ *                 type: string
+ *                 enum: [DISPONIBLE, EMPRUNTE, RESERVE, MAINTENANCE]
  *     responses:
  *       200:
- *         description: Emprunt réussi
+ *         description: Statut mis à jour
  */
-router.post('/:id/emprunter', authenticate, livreController.emprunterLivre);
+router.patch('/exemplaires/:id/statut', authenticate, authorize('admin'), exemplaireController.updateStatut);
 
 export default router;

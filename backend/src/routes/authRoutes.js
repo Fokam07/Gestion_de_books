@@ -6,8 +6,10 @@ import rateLimit from 'express-rate-limit';
 const router = Router();
 
 const authLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, 
-  max: 5, 
+  windowMs: 15 * 60 * 1000,
+  max: 5,
+  // Désactivé en test pour ne pas bloquer les suites automatisées
+  skip: () => process.env.NODE_ENV === 'test',
   message: { message: "Trop de tentatives, réessayez dans 15 minutes." }
 });
 
@@ -21,13 +23,17 @@ const authLimiter = rateLimit({
  *       required: true
  *       content:
  *         application/json:
+ *           example:
+ *             nom: "Dupont"
+ *             email: "dupont@example.com"
+ *             password: "motdepasse123"
  *           schema:
  *             type: object
  *             required:
  *               - nom
  *               - email
  *               - password
- *             properties:
+*             properties:
  *               nom:
  *                 type: string
  *               email:

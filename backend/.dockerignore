@@ -1,0 +1,24 @@
+# Dépendances (reconstruites dans l'image)
+node_modules/
+
+# Base de données locale (montée via volume en prod)
+prisma/*.db
+prisma/*.db-journal
+
+# Variables d'environnement (injectées via docker run -e ou .env externe)
+.env
+.env.*
+
+# Fichiers de test (inutiles en production)
+tests/
+jest.config.js
+
+# Fichiers de développement
+.claude/
+prompt.md
+readme.md
+GUIDE_TESTS.md
+
+# Système
+.DS_Store
+*.log

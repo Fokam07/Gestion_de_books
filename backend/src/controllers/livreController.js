@@ -5,12 +5,26 @@ const livreSchema = z.object({
   titre: z.string().min(1, "Titre obligatoire"),
   auteur: z.string().min(1, "Auteur obligatoire"),
   annee: z.number().optional(),
-  genre: z.string().optional()
+  isbn: z.string().optional(),
+  editeur: z.string().optional(),
+  collection: z.string().optional(),
+  imageUrl:   z.string().url("URL invalide").optional(), // ← ajouter
+
 });
 
-export const getLivres = async (req, res) => {
+export const getLivres = async (_req, res) => {
   const livres = await livreService.getAllLivres();
   res.json(livres);
+};
+
+export const getOneLivre = async (req, res, next) => {
+  try {
+    const livre = await livreService.getOneLivre(req.params.id);
+    if (!livre) return res.status(404).json({ message: 'Livre introuvable' });
+    res.json(livre);
+  } catch (error) {
+    next(error);
+  }
 };
 
 export const postLivre = async (req, res, next) => {
@@ -33,21 +47,3 @@ export const deleteLivre = async (req, res, next) => {
   }
 };
 
-export const emprunterLivre = async (req, res, next) => {
-  try {
-    const emprunt = await livreService.emprunter(parseInt(req.params.id), req.user.id);
-    res.json(emprunt);
-  } catch (error) {
-    if (error.message === 'NOT_AVAILABLE') return res.status(409).json({ message: "Livre déjà emprunté" });
-    next(error);
-  }
-};
-
-export const retournerLivre = async (req, res, next) => {
-  try {
-    const livre = await livreService.retourner(parseInt(req.params.id));
-    res.json(livre);
-  } catch (error) {
-    next(error);
-  }
-};

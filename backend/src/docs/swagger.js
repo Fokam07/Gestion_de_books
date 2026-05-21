@@ -8,6 +8,7 @@ const options = {
       version: '1.0.0',
       description: 'Documentation de l\'API avec JWT et Refresh Tokens',
     },
+
     components: {
       securitySchemes: {
         bearerAuth: {
@@ -17,8 +18,14 @@ const options = {
         },
       },
     },
+    security: [
+      {
+        bearerAuth: [],
+      }
+    ]
   },
   apis: ['./src/routes/*.js'], // Va chercher les annotations dans les fichiers de routes
 };
 
 export const swaggerSpec = swaggerJSDoc(options);
+

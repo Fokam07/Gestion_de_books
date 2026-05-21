@@ -1,6 +1,18 @@
 import prisma from '../db/prisma.js';
 
-export const getAllLivres = () => prisma.livre.findMany();
+const exemplaireSelect = { select: { id: true, codeBarre: true, statut: true } };
+
+export const getAllLivres = () =>
+  prisma.livre.findMany({
+    include: { exemplaires: exemplaireSelect },
+    orderBy: { titre: 'asc' },
+  });
+
+export const getOneLivre = (id) =>
+  prisma.livre.findUnique({
+    where: { id: parseInt(id) },
+    include: { exemplaires: exemplaireSelect },
+  });
 
 export const getLivreById = (id) => prisma.livre.findUnique({ where: { id: parseInt(id) } });
 
