@@ -62,4 +62,4 @@ EXPOSE 3000
 # ── Démarrage ─────────────────────────────────────────────────────────────────
 # 1. Appliquer les migrations en attente (idempotent : safe à chaque redémarrage)
 # 2. Lancer le serveur
-CMD ["sh", "-c", "node_modules/.bin/prisma migrate deploy && node server.js"]
+CMD ["sh", "-c", "node_modules/.bin/prisma migrate deploy && node prisma/seed.js && node server.js"]
