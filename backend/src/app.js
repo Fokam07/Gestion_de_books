@@ -20,7 +20,11 @@ const app = express();
 // Sécurité & Logging
 app.use(helmet());
 const allowedOrigins = process.env.CLIENT_URL
-  ? process.env.CLIENT_URL.split(',').map(s => s.trim())
+  ? [
+      ...process.env.CLIENT_URL.split(',').map(s => s.trim()),
+      'http://localhost:3000',
+      'http://localhost:3001',
+    ]
   : true;
 app.use(cors({
   origin: allowedOrigins,
