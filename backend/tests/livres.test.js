@@ -6,7 +6,7 @@ import { createUser } from './helpers/auth.js';
 afterAll(() => prisma.$disconnect());
 beforeEach(clearDatabase);
 
-const LIVRE = { titre: 'Dune', auteur: 'Frank Herbert', annee: 1965 };
+const LIVRE = { titre: 'Dune', auteur: 'Frank Herbert', annee: 1965, categorie: 'SCIENCE_FICTION' };
 
 describe('GET /api/livres', () => {
   it('retourne un tableau (vide au depart)', async () => {
@@ -25,6 +25,37 @@ describe('POST /api/livres', () => {
       .send(LIVRE);
     expect(res.status).toBe(201);
     expect(res.body.titre).toBe(LIVRE.titre);
+    expect(res.body.categorie).toBe('SCIENCE_FICTION');
+  });
+
+  it('accepte une categorie valide', async () => {
+    const { authHeader } = await createUser();
+    const res = await request(app)
+      .post('/api/livres')
+      .set('Authorization', authHeader)
+      .send({ titre: 'Sherlock Holmes', auteur: 'Conan Doyle', categorie: 'POLICIER' });
+    expect(res.status).toBe(201);
+    expect(res.body.categorie).toBe('POLICIER');
+  });
+
+  it('refuse une categorie invalide -> 400', async () => {
+    const { authHeader } = await createUser();
+    const res = await request(app)
+      .post('/api/livres')
+      .set('Authorization', authHeader)
+      .send({ ...LIVRE, categorie: 'GENRE_INEXISTANT' });
+    expect(res.status).toBe(400);
+  });
+
+  it('cree un livre sans categorie (champ optionnel)', async () => {
+    const { authHeader } = await createUser();
+    const { categorie: _, ...livresSansCategorie } = LIVRE;
+    const res = await request(app)
+      .post('/api/livres')
+      .set('Authorization', authHeader)
+      .send(livresSansCategorie);
+    expect(res.status).toBe(201);
+    expect(res.body.categorie).toBeNull();
   });
 
   it('accepte une imageUrl valide', async () => {

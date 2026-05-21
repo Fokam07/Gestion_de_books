@@ -19,8 +19,12 @@ const app = express();
 
 // Sécurité & Logging
 app.use(helmet());
+const allowedOrigins = process.env.CLIENT_URL
+  ? process.env.CLIENT_URL.split(',').map(s => s.trim())
+  : true;
 app.use(cors({
-  origin: process.env.CLIENT_URL || '*',
+  origin: allowedOrigins,
+  credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
