@@ -173,7 +173,7 @@ export default function StudentDashboard() {
     <div className="min-h-screen bg-slate-50/50">
       <StudentNavbar />
       <main className="pt-20">
-        <section className="py-12 px-4 sm:px-6 lg:px-8 bg-gradient-to-r from-[#C41C3B] to-[#8B1220] text-white relative overflow-hidden">
+        <section className="py-12 px-4 sm:px-6 lg:px-8 bg-linear-to-r from-[#C41C3B] to-[#8B1220] text-white relative overflow-hidden">
           <div className="max-w-6xl mx-auto relative z-10">
             <span className="bg-white/20 text-white text-xs font-bold px-3 py-1 rounded-full border border-white/30 uppercase tracking-widest">
               Portail Lecteur

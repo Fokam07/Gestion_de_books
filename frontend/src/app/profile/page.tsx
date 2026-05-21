@@ -113,7 +113,7 @@ export default function ProfilePage() {
                               ))}
                               <p className="text-xs text-slate-400 mt-1">Emprunte le {formatDate(emprunt.dateEmprunt)}</p>
                             </div>
-                            <span className="text-xs font-bold px-2.5 py-1 bg-blue-50 text-blue-700 rounded-full border border-blue-200 flex-shrink-0">En cours</span>
+                            <span className="text-xs font-bold px-2.5 py-1 bg-blue-50 text-blue-700 rounded-full border border-blue-200 shrink-0">En cours</span>
                           </div>
                         ))}
                       </div>
@@ -135,7 +135,7 @@ export default function ProfilePage() {
                               <p className="text-xs text-slate-500">{res.exemplaire.livre.auteur}</p>
                               <p className="text-xs text-slate-400 mt-1">Reserve le {formatDate(res.createdAt)}</p>
                             </div>
-                            <span className="text-xs font-bold px-2.5 py-1 bg-orange-50 text-orange-700 rounded-full border border-orange-200 flex-shrink-0">Active</span>
+                            <span className="text-xs font-bold px-2.5 py-1 bg-orange-50 text-orange-700 rounded-full border border-orange-200 shrink-0">Active</span>
                           </div>
                         ))}
                       </div>
@@ -158,7 +158,7 @@ export default function ProfilePage() {
                                 {formatDate(emprunt.dateEmprunt)}{emprunt.dateRetour ? ` → ${formatDate(emprunt.dateRetour)}` : ''}
                               </p>
                             </div>
-                            <span className="text-xs font-bold px-2.5 py-1 bg-slate-100 text-slate-500 rounded-full flex-shrink-0">Retourne</span>
+                            <span className="text-xs font-bold px-2.5 py-1 bg-slate-100 text-slate-500 rounded-full shrink-0">Retourne</span>
                           </div>
                         ))}
                       </div>
