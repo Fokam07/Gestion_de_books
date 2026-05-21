@@ -1,0 +1,105 @@
+name: CI — API Bibliothèque
+
+# Déclenché à chaque push sur main ou à chaque Pull Request vers main
+on:
+  push:
+    branches: [**]
+  pull_request:
+    branches: [**]
+
+jobs:
+  # ─────────────────────────────────────────────────────────────────────────────
+  # JOB 1 — Backend : lint · tests · build
+  # ─────────────────────────────────────────────────────────────────────────────
+  backend:
+    name: Backend (Node 20)
+    runs-on: ubuntu-latest
+
+    # Toutes les commandes run depuis le dossier backend/
+    defaults:
+      run:
+        working-directory: backend
+
+    steps:
+      # 1. Récupérer le code source
+      - name: Checkout du code
+        uses: actions/checkout@v4
+
+      # 2. Installer Node.js 20 avec cache npm
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: backend/package-lock.json
+
+      # 3. Installer les dépendances (version exacte du lockfile)
+      - name: Installation des dépendances
+        run: npm ci
+
+      # 4. Lint — vérification syntaxique de tous les fichiers JS du projet
+      - name: Lint (vérification syntaxe Node.js)
+        run: node --check $(find src -name "*.js" | tr '\n' ' ')
+
+      # 5. Générer le client Prisma (nécessaire avant les tests ET avant le build)
+      #    DATABASE_URL factice : prisma generate n'a pas besoin de se connecter à la DB
+      - name: Prisma generate
+        run: npx prisma generate
+        env:
+          DATABASE_URL: file:/tmp/ci-dummy.db
+
+      # 6. Tests d'intégration Jest + Supertest
+      #    Le globalSetup.cjs crée test.db via `prisma db push`
+      #    JWT_SECRET et REFRESH_SECRET viennent des secrets GitHub du dépôt
+      - name: Tests (Jest + Supertest)
+        run: npm test
+        env:
+          NODE_ENV: test
+          DATABASE_URL: file:./test.db
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+          REFRESH_SECRET: ${{ secrets.REFRESH_SECRET }}
+
+      # 7. Build de production (prisma generate + prisma migrate deploy)
+      - name: Build
+        run: npm run build
+        env:
+          DATABASE_URL: file:/tmp/ci-build.db
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # JOB 2 — Frontend : lint · type-check · build
+  # ─────────────────────────────────────────────────────────────────────────────
+  frontend:
+    name: Frontend (Next.js 16)
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: frontend
+
+    steps:
+      - name: Checkout du code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Installation des dépendances
+        run: npm ci
+
+      # Lint ESLint (eslint-config-next inclus dans le projet)
+      - name: Lint (ESLint)
+        run: npm run lint
+
+      # Vérification TypeScript : zéro erreur de type autorisée
+      - name: Type-check (TypeScript)
+        run: npx tsc --noEmit
+
+      # Build Next.js de production
+      - name: Build
+        run: npm run build
+        env:
+          NEXT_PUBLIC_API_URL: http://localhost:3000
