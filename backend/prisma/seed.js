@@ -133,34 +133,38 @@ const catalogue = [
 async function main() {
   console.log('--- Début du Seeding ---');
 
-  await prisma.reservation.deleteMany();
-  await prisma.empruntExemplaire.deleteMany();
-  await prisma.emprunt.deleteMany();
-  await prisma.exemplaire.deleteMany();
-  await prisma.livre.deleteMany();
-  await prisma.refreshToken.deleteMany();
-  await prisma.user.deleteMany();
-
   const adminPassword = await bcrypt.hash('admin123', 10);
   const userPassword = await bcrypt.hash('user123', 10);
 
-  await prisma.user.create({
-    data: { nom: 'Admin Biblio', email: 'admin@bibliotheque.fr', password: adminPassword, role: 'admin' },
+  await prisma.user.upsert({
+    where: { email: 'admin@bibliotheque.fr' },
+    update: {},
+    create: { nom: 'Admin Biblio', email: 'admin@bibliotheque.fr', password: adminPassword, role: 'admin' },
   });
-  await prisma.user.create({
-    data: { nom: 'Jean Dupont', email: 'jean@exemple.fr', password: userPassword, role: 'user' },
+  await prisma.user.upsert({
+    where: { email: 'jean@exemple.fr' },
+    update: {},
+    create: { nom: 'Jean Dupont', email: 'jean@exemple.fr', password: userPassword, role: 'user' },
   });
 
   console.log('✅ Utilisateurs : admin@bibliotheque.fr / jean@exemple.fr');
 
   for (const { livre, exemplaires } of catalogue) {
-    const livreCreé = await prisma.livre.create({ data: livre });
+    const livreUpserted = await prisma.livre.upsert({
+      where: { isbn: livre.isbn },
+      update: {},
+      create: livre,
+    });
     for (const codeBarre of exemplaires) {
-      await prisma.exemplaire.create({ data: { codeBarre, livreId: livreCreé.id } });
+      await prisma.exemplaire.upsert({
+        where: { codeBarre },
+        update: {},
+        create: { codeBarre, livreId: livreUpserted.id },
+      });
     }
   }
 
-  console.log(`✅ ${catalogue.length} livres et leurs exemplaires créés.`);
+  console.log(`✅ ${catalogue.length} livres et leurs exemplaires créés (ou déjà présents).`);
   console.log('--- Seeding terminé ---');
 }
 
