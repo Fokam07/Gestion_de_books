@@ -1,5 +1,7 @@
+'use client';
+
 import Navbar from '@/components/Navbar';
-import { FaPhone, FaEnvelope, FaMapMarkerAlt, FaFacebook, FaTwitter, FaLinkedin, FaSend } from 'react-icons/fa';
+import { FaPhone, FaEnvelope, FaMapMarkerAlt, FaFacebook, FaTwitter, FaLinkedin, FaPaperPlane } from 'react-icons/fa';
 
 export default function ContactPage() {
   return (
@@ -147,7 +149,7 @@ export default function ContactPage() {
                     className="w-full py-3 rounded-lg text-white font-bold text-lg transition-all hover:shadow-lg flex items-center justify-center gap-2"
                     style={{ backgroundColor: '#C41C3B' }}
                   >
-                    <FaSend /> Envoyer le message
+                    <FaPaperPlane /> Envoyer le message
                   </button>
                 </form>
               </div>

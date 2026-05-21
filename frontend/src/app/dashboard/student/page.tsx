@@ -1,353 +1,452 @@
 'use client';
 
 import StudentNavbar from '@/components/StudentNavbar';
-import { FaBook, FaClock, FaCheckCircle, FaSearch, FaStar, FaTimes, FaInbox } from 'react-icons/fa';
-import { useState, useMemo } from 'react';
+import { useAuth } from '@/context/AuthContext';
+import {
+  livresApi, empruntsApi, reservationsApi,
+  Livre, Emprunt, Reservation,
+} from '@/lib/api';
+import { FaBook, FaClock, FaCheckCircle, FaSearch, FaTimes, FaInbox, FaArrowRight, FaInfoCircle, FaCalendarAlt, FaBarcode, FaBuilding, FaBookmark } from 'react-icons/fa';
+import { useState, useEffect, useMemo, useCallback } from 'react';
+import { AxiosError } from 'axios';
+
+type BookStatus = 'DISPONIBLE' | 'PENDING_VALIDATION' | 'RESERVABLE' | 'ALREADY_BORROWED' | 'ALREADY_RESERVED' | 'INDISPONIBLE';
+
+function getBookStatus(livre: Livre, emprunts: Emprunt[], reservations: Reservation[]): BookStatus {
+  // 1. On vérifie d'abord si l'utilisateur a une demande en attente pour ce livre
+  const pendingIds = emprunts
+    .filter(e => e.statut === 'ATTENTE')
+    .flatMap(e => e.exemplaires.map(ex => ex.exemplaire.livre.id));
+
+  if (pendingIds.includes(livre.id)) return 'PENDING_VALIDATION';
+
+  // 2. On vérifie si l'utilisateur possède déjà le livre en cours de lecture
+  const borrowedIds = emprunts
+    .filter(e => e.statut === 'EN_COURS')
+    .flatMap(e => e.exemplaires.map(ex => ex.exemplaire.livre.id));
+  
+  const reservedIds = reservations
+    .filter(r => r.statut === 'ACTIVE')
+    .map(r => r.exemplaire.livre.id);
+
+  if (borrowedIds.includes(livre.id)) return 'ALREADY_BORROWED';
+  if (reservedIds.includes(livre.id)) return 'ALREADY_RESERVED';
+  if (livre.exemplaires.some(e => e.statut === 'DISPONIBLE')) return 'DISPONIBLE';
+  if (livre.exemplaires.some(e => e.statut === 'EMPRUNTE')) return 'RESERVABLE';
+  return 'INDISPONIBLE';
+}
 
 export default function StudentDashboard() {
-  const [activeTab, setActiveTab] = useState('reservations');
+  const { user } = useAuth();
+  const [activeTab, setActiveTab] = useState('catalog');
   const [searchQuery, setSearchQuery] = useState('');
-  const [categoryFilter, setCategoryFilter] = useState('All');
   const [availabilityFilter, setAvailabilityFilter] = useState('All');
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [isLoadingData, setIsLoadingData] = useState(true);
+  const [actionLoading, setActionLoading] = useState<number | null>(null);
+  const [selectedBook, setSelectedBook] = useState<Livre | null>(null);
 
-  const [myReservations, setMyReservations] = useState([
-    { id: 101, title: '1984', author: 'George Orwell', reservedDate: '18 Mai 2026', position: '3ème' },
-    { id: 102, title: 'Sapiens', author: 'Yuval Noah Harari', reservedDate: '19 Mai 2026', position: '5ème' },
-  ]);
+  const [livres, setLivres] = useState<Livre[]>([]);
+  const [emprunts, setEmprunts] = useState<Emprunt[]>([]);
+  const [reservations, setReservations] = useState<Reservation[]>([]);
 
-  const [myBorrowings, setMyBorrowings] = useState([
-    { id: 201, title: 'The Great Gatsby', author: 'F. Scott Fitzgerald', borrowDate: '10 Mai 2026', dueDate: '24 Mai 2026', status: 'En cours' },
-    { id: 202, title: 'To Kill a Mockingbird', author: 'Harper Lee', borrowDate: '12 Mai 2026', dueDate: '26 Mai 2026', status: 'En cours' },
-  ]);
+  const loadData = useCallback(async () => {
+    try {
+      const [l, e, r] = await Promise.all([
+        livresApi.getAll(),
+        empruntsApi.getMes(),
+        reservationsApi.getMes(),
+      ]);
+      setLivres(l.data);
+      setEmprunts(e.data);
+      setReservations(r.data);
+    } catch {
+      // silent
+    } finally {
+      setIsLoadingData(false);
+    }
+  }, []);
 
-  const [availableBooks, setAvailableBooks] = useState([
-    { id: 1, title: 'The Great Gatsby', author: 'F. Scott Fitzgerald', category: 'Fiction', rating: 4.5, available: true },
-    { id: 2, title: 'To Kill a Mockingbird', author: 'Harper Lee', category: 'Littérature', rating: 4.8, available: true },
-    { id: 3, title: '1984', author: 'George Orwell', category: 'Fiction', rating: 4.6, available: false },
-    { id: 4, title: 'Pride and Prejudice', author: 'Jane Austen', category: 'Littérature', rating: 4.7, available: true },
-    { id: 5, title: 'The Hobbit', author: 'J.R.R. Tolkien', category: 'Fiction', rating: 4.9, available: true },
-    { id: 6, title: 'Sapiens', author: 'Yuval Noah Harari', category: 'Science', rating: 4.4, available: true },
-    { id: 7, title: 'Le Petit Prince', author: 'Antoine de Saint-Exupéry', category: 'Littérature', rating: 4.9, available: true },
-    { id: 8, title: 'Cosmos', author: 'Carl Sagan', category: 'Science', rating: 4.8, available: true },
-  ]);
+  useEffect(() => { loadData(); }, [loadData]);
 
-  const handleReserve = (bookId: number) => {
-    const book = availableBooks.find((b) => b.id === bookId);
-    if (!book || !book.available) return;
-
-    // Mark book as unavailable in state
-    setAvailableBooks((prev) =>
-      prev.map((b) => (b.id === bookId ? { ...b, available: false } : b))
-    );
-
-    // Add to reservations state
-    const newRes = {
-      id: Date.now(),
-      title: book.title,
-      author: book.author,
-      reservedDate: '21 Mai 2026',
-      position: '1er (Disponible au guichet)',
-    };
-    setMyReservations((prev) => [newRes, ...prev]);
-
-    setSuccessMessage(`Félicitations ! Vous avez réservé "${book.title}". Récupérez-le sous 48h.`);
-    setActiveTab('reservations');
-
-    setTimeout(() => {
-      setSuccessMessage(null);
-    }, 5000);
+  const showSuccess = (msg: string) => {
+    setSuccessMessage(msg);
+    setTimeout(() => setSuccessMessage(null), 5000);
+  };
+  const showError = (msg: string) => {
+    setErrorMessage(msg);
+    setTimeout(() => setErrorMessage(null), 5000);
   };
 
-  const handleCancelReservation = (resId: number, title: string) => {
-    setMyReservations((prev) => prev.filter((r) => r.id !== resId));
-    // Refactor matching book to be available again
-    setAvailableBooks((prev) =>
-      prev.map((b) => (b.title === title ? { ...b, available: true } : b))
-    );
+  const handleBorrow = async (livreId: number) => {
+    const livre = livres.find(l => l.id === livreId);
+    if (!livre) return;
+    const exemplaire = livre.exemplaires.find(e => e.statut === 'DISPONIBLE');
+    if (!exemplaire) return;
+    setActionLoading(livreId);
+    try {
+      await empruntsApi.creer([exemplaire.id]);
+      await loadData();
+      
+      showSuccess(`Demande enregistrée pour "${livre.titre}". Veuillez la faire valider par l'administration.`);
+      setActiveTab('borrowings'); 
+      setSelectedBook(null);
+    } catch (err) {
+      const e = err as AxiosError<{ message: string }>;
+      showError(e.response?.data?.message || "Erreur lors de l'emprunt.");
+    } finally {
+      setActionLoading(null);
+    }
   };
 
-  // Filter logic
-  const filteredBooks = useMemo(() => {
-    return availableBooks.filter((book) => {
+  const handleReserve = async (livreId: number) => {
+    const livre = livres.find(l => l.id === livreId);
+    if (!livre) return;
+    setActionLoading(livreId);
+    try {
+      await reservationsApi.creer(livreId);
+      await loadData();
+      showSuccess(`Réservation de "${livre.titre}" enregistrée.`);
+      setActiveTab('reservations');
+      setSelectedBook(null);
+    } catch (err) {
+      const e = err as AxiosError<{ message: string }>;
+      showError(e.response?.data?.message || 'Erreur lors de la réservation.');
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleCancelReservation = async (resId: number) => {
+    setActionLoading(resId);
+    try {
+      await reservationsApi.annuler(resId);
+      await loadData();
+      showSuccess('Réservation annulée avec succès.');
+    } catch (err) {
+      const e = err as AxiosError<{ message: string }>;
+      showError(e.response?.data?.message || "Erreur lors de l'annulation.");
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleHonorReservation = async (resId: number) => {
+    setActionLoading(resId);
+    try {
+      await reservationsApi.honorer(resId);
+      await loadData();
+      showSuccess('Réservation convertie ! Présentez-vous à l\'accueil pour récupérer le livre.');
+      setActiveTab('borrowings');
+    } catch (err) {
+      const e = err as AxiosError<{ message: string }>;
+      showError(e.response?.data?.message || 'Erreur lors de la conversion.');
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const activeReservations = reservations.filter(r => r.statut === 'ACTIVE');
+  const attenteEmprunts = emprunts.filter(e => e.statut === 'ATTENTE');
+  const activeEmprunts = emprunts.filter(e => e.statut === 'EN_COURS');
+  const pastEmprunts = emprunts.filter(e => e.statut === 'RETOURNE');
+
+  const filteredLivres = useMemo(() => {
+    return livres.filter(livre => {
       const matchesSearch =
-        book.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        book.author.toLowerCase().includes(searchQuery.toLowerCase());
-
-      const matchesCategory =
-        categoryFilter === 'All' || book.category === categoryFilter;
-
+        livre.titre.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        livre.auteur.toLowerCase().includes(searchQuery.toLowerCase());
+      const status = getBookStatus(livre, emprunts, reservations);
       const matchesAvailability =
         availabilityFilter === 'All' ||
-        (availabilityFilter === 'available' ? book.available : !book.available);
-
-      return matchesSearch && matchesCategory && matchesAvailability;
+        (availabilityFilter === 'available' && status === 'DISPONIBLE') ||
+        (availabilityFilter === 'unavailable' && status !== 'DISPONIBLE');
+      return matchesSearch && matchesAvailability;
     });
-  }, [availableBooks, searchQuery, categoryFilter, availabilityFilter]);
+  }, [livres, searchQuery, availabilityFilter, emprunts, reservations]);
+
+  const formatDate = (d: string) =>
+    new Date(d).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
 
   return (
     <div className="min-h-screen bg-slate-50/50">
       <StudentNavbar />
       <main className="pt-20">
-        {/* Header */}
-        <section className="py-12 px-4 sm:px-6 lg:px-8 bg-linear-to-r from-emerald-800 to-emerald-950 text-white relative overflow-hidden">
-          <div className="absolute inset-0 bg-grid-white/[0.05] bg-[size:20px_20px]" />
+        <section className="py-12 px-4 sm:px-6 lg:px-8 bg-gradient-to-r from-[#C41C3B] to-[#8B1220] text-white relative overflow-hidden">
           <div className="max-w-6xl mx-auto relative z-10">
-            <span className="bg-emerald-500/20 text-emerald-300 text-xs font-bold px-3 py-1 rounded-full border border-emerald-500/30 uppercase tracking-widest">
-              Portail Universitaire
+            <span className="bg-white/20 text-white text-xs font-bold px-3 py-1 rounded-full border border-white/30 uppercase tracking-widest">
+              Portail Lecteur
             </span>
-            <h1 className="text-4xl font-extrabold mt-3 mb-2 font-serif">
-              Mon Espace Lecteur
-            </h1>
-            <p className="text-emerald-100 font-light">Bienvenue, Jean Dupont | ID: #STU-2026-09</p>
+            <h1 className="text-4xl font-extrabold mt-3 mb-2 font-serif">Mon Espace Lecteur</h1>
+            <p className="text-red-100 font-light">Bienvenue, {user?.nom ?? 'Utilisateur'}</p>
           </div>
         </section>
 
-        {/* Success Message Banner */}
-        {successMessage && (
-          <div className="max-w-6xl mx-auto px-4 mt-6">
-            <div className="bg-emerald-50 border border-emerald-200 text-emerald-800 px-6 py-4 rounded-xl flex items-center justify-between shadow-xs animate-slide-in">
+        <div className="max-w-6xl mx-auto px-4">
+          {successMessage && (
+            <div className="mt-6 bg-emerald-50 border border-emerald-200 text-emerald-800 px-6 py-4 rounded-xl flex items-center justify-between shadow-sm">
               <div className="flex items-center gap-3">
-                <FaCheckCircle className="text-emerald-600 text-xl" />
+                <FaCheckCircle className="text-emerald-600 text-xl shrink-0" />
                 <p className="font-semibold text-sm">{successMessage}</p>
               </div>
-              <button
-                onClick={() => setSuccessMessage(null)}
-                className="text-emerald-500 hover:text-emerald-800 cursor-pointer"
-              >
-                <FaTimes />
-              </button>
+              <button onClick={() => setSuccessMessage(null)} className="text-emerald-500 hover:text-emerald-800 cursor-pointer ml-4"><FaTimes /></button>
             </div>
-          </div>
-        )}
+          )}
+          {errorMessage && (
+            <div className="mt-6 bg-red-50 border border-red-200 text-red-800 px-6 py-4 rounded-xl flex items-center justify-between shadow-sm">
+              <p className="font-semibold text-sm">{errorMessage}</p>
+              <button onClick={() => setErrorMessage(null)} className="text-red-500 hover:text-red-800 cursor-pointer ml-4"><FaTimes /></button>
+            </div>
+          )}
+        </div>
 
-        {/* Statistics */}
         <section className="py-10 px-4 sm:px-6 lg:px-8">
           <div className="max-w-6xl mx-auto">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
-              <div className="p-6 bg-white rounded-xl border border-slate-100 shadow-xs hover:shadow-md transition-all duration-300">
+              <div className="p-6 bg-white rounded-xl border border-slate-100 shadow-sm">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-slate-500 text-xs font-bold uppercase tracking-wider">
-                      Livres Empruntés
-                    </p>
-                    <p className="text-4xl font-black mt-2 text-emerald-600">
-                      {myBorrowings.length}
-                    </p>
+                    <p className="text-slate-500 text-xs font-bold uppercase tracking-wider">Livres Empruntés</p>
+                    <p className="text-4xl font-black mt-2 text-[#C41C3B]">{attenteEmprunts.length + activeEmprunts.length}</p>
                   </div>
-                  <div className="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-xl">
-                    <FaBook />
-                  </div>
+                  <div className="w-12 h-12 rounded-xl bg-red-50 text-[#C41C3B] flex items-center justify-center text-xl"><FaBook /></div>
                 </div>
               </div>
-
-              <div className="p-6 bg-white rounded-xl border border-slate-100 shadow-xs hover:shadow-md transition-all duration-300">
+              <div className="p-6 bg-white rounded-xl border border-slate-100 shadow-sm">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-slate-500 text-xs font-bold uppercase tracking-wider">
-                      Réservations Actives
-                    </p>
-                    <p className="text-4xl font-black mt-2 text-orange-500">
-                      {myReservations.length}
-                    </p>
+                    <p className="text-slate-500 text-xs font-bold uppercase tracking-wider">Réservations Actives</p>
+                    <p className="text-4xl font-black mt-2 text-orange-500">{activeReservations.length}</p>
                   </div>
-                  <div className="w-12 h-12 rounded-xl bg-orange-50 text-orange-500 flex items-center justify-center text-xl">
-                    <FaClock />
-                  </div>
+                  <div className="w-12 h-12 rounded-xl bg-orange-50 text-orange-500 flex items-center justify-center text-xl"><FaClock /></div>
                 </div>
               </div>
-
-              <div className="p-6 bg-white rounded-xl border border-slate-100 shadow-xs hover:shadow-md transition-all duration-300">
+              <div className="p-6 bg-white rounded-xl border border-slate-100 shadow-sm">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-slate-500 text-xs font-bold uppercase tracking-wider">
-                      Amendes / Pénalités
-                    </p>
-                    <p className="text-4xl font-black mt-2 text-emerald-500">
-                      0 €
-                    </p>
+                    <p className="text-slate-500 text-xs font-bold uppercase tracking-wider">Emprunts Passés</p>
+                    <p className="text-4xl font-black mt-2 text-slate-700">{pastEmprunts.length}</p>
                   </div>
-                  <div className="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-500 flex items-center justify-center text-xl">
-                    <FaCheckCircle />
-                  </div>
+                  <div className="w-12 h-12 rounded-xl bg-slate-100 text-slate-500 flex items-center justify-center text-xl"><FaCheckCircle /></div>
                 </div>
               </div>
             </div>
 
-            {/* Tabs */}
-            <div className="flex gap-4 mb-8 border-b border-slate-200">
+            <div className="flex gap-4 mb-8 border-b border-slate-200 flex-wrap">
               {[
-                { id: 'reservations', label: 'Mes Réservations', icon: FaClock, color: 'text-orange-500 border-orange-500' },
-                { id: 'borrowings', label: 'Mes Emprunts', icon: FaBook, color: 'text-emerald-600 border-emerald-600' },
-                { id: 'catalog', label: 'Catalogue & Réservation', icon: FaSearch, color: 'text-blue-600 border-blue-600' },
+                { id: 'catalog', label: 'Catalogue', icon: FaSearch, activeColor: 'text-blue-600 border-blue-600', count: 0 },
+                { id: 'borrowings', label: 'Mes Emprunts', icon: FaBook, activeColor: 'text-[#C41C3B] border-[#C41C3B]', count: attenteEmprunts.length + activeEmprunts.length },
+                { id: 'reservations', label: 'Mes Réservations', icon: FaClock, activeColor: 'text-orange-500 border-orange-500', count: activeReservations.length },
               ].map((tab) => (
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
                   className={`pb-4 font-bold flex items-center gap-2 border-b-2 transition-all cursor-pointer ${
-                    activeTab === tab.id ? tab.color : 'border-transparent text-slate-500 hover:text-slate-800'
+                    activeTab === tab.id ? tab.activeColor : 'border-transparent text-slate-500 hover:text-slate-800'
                   }`}
                 >
-                  <tab.icon className="text-xs" /> {tab.label}
+                  <tab.icon className="text-xs" />
+                  {tab.label}
+                  {tab.count > 0 && (
+                    <span className={`text-xs px-1.5 py-0.5 rounded-full font-bold ${
+                      tab.id === 'reservations' ? 'bg-orange-100 text-orange-600' : 'bg-red-100 text-[#C41C3B]'
+                    }`}>{tab.count}</span>
+                  )}
                 </button>
               ))}
             </div>
 
-            {/* Tab Content */}
-            {activeTab === 'reservations' && (
-              <div className="space-y-4 animate-fade-in">
-                <h2 className="text-2xl font-bold text-slate-900 font-serif">
-                  Mes Réservations
-                </h2>
-                {myReservations.length === 0 ? (
-                  <div className="border border-dashed border-slate-200 rounded-2xl p-12 text-center bg-white">
-                    <FaInbox className="text-4xl text-slate-300 mx-auto mb-3" />
-                    <p className="text-slate-500 font-medium">Vous n'avez pas de réservation active pour le moment.</p>
-                    <button
-                      onClick={() => setActiveTab('catalog')}
-                      className="mt-4 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-sm font-bold transition-all cursor-pointer"
-                    >
-                      Consulter le catalogue
-                    </button>
-                  </div>
-                ) : (
-                  myReservations.map((res) => (
-                    <div key={res.id} className="p-6 bg-white rounded-xl border border-slate-100 shadow-xs flex justify-between items-center hover:scale-[1.005] transition-all">
-                      <div>
-                        <h3 className="font-bold text-lg text-slate-900">
-                          {res.title}
-                        </h3>
-                        <p className="text-slate-500 text-sm">
-                          par {res.author}
-                        </p>
-                        <p className="text-amber-600 font-semibold text-xs mt-1 bg-amber-50 px-2.5 py-1 rounded-md inline-block">
-                          Position : {res.position}
-                        </p>
+            {!isLoadingData && (
+              <>
+                {/* CATALOGUE */}
+                {activeTab === 'catalog' && (
+                  <div>
+                    <div className="mb-8">
+                      <h2 className="text-2xl font-bold mb-4 text-slate-900 font-serif">Catalogue des ouvrages</h2>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                        <div className="relative">
+                          <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+                          <input
+                            type="text"
+                            placeholder="Rechercher par titre, auteur..."
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            className="w-full pl-12 pr-4 py-3 border border-slate-200 rounded-lg text-slate-800 focus:outline-none focus:border-[#C41C3B] text-sm bg-white"
+                          />
+                        </div>
+                        <select
+                          value={availabilityFilter}
+                          onChange={(e) => setAvailabilityFilter(e.target.value)}
+                          className="px-4 py-3 border border-slate-200 rounded-lg text-slate-700 text-sm bg-white cursor-pointer focus:outline-none focus:border-[#C41C3B]"
+                        >
+                          <option value="All">Tous les livres</option>
+                          <option value="available">Disponibles</option>
+                          <option value="unavailable">Indisponibles</option>
+                        </select>
                       </div>
-                      <button
-                        onClick={() => handleCancelReservation(res.id, res.title)}
-                        className="px-4 py-2 rounded-lg text-white font-semibold bg-red-650 hover:bg-red-700 transition-all cursor-pointer text-sm shadow-xs"
-                      >
-                        Annuler la réservation
-                      </button>
                     </div>
-                  ))
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      {filteredLivres.map((livre) => {
+                        const status = getBookStatus(livre, emprunts, reservations);
+                        const isLoading = actionLoading === livre.id;
+                        return (
+                          <div key={livre.id} className="p-5 bg-white rounded-xl border border-slate-100 hover:shadow-lg transition-all flex gap-5">
+                            <div className="w-24 h-36 bg-slate-100 rounded-lg overflow-hidden shrink-0 border border-slate-200/60 relative shadow-sm">
+                              {livre.imageUrl ? (
+                                <img src={livre.imageUrl} alt={livre.titre} className="w-full h-full object-cover" />
+                              ) : (
+                                <div className="w-full h-full flex flex-col items-center justify-center text-slate-400 p-2 text-center">
+                                  <FaBook className="text-2xl mb-1 text-slate-300" />
+                                  <span className="text-[10px] font-semibold">Pas d'image</span>
+                                </div>
+                              )}
+                            </div>
+                            <div className="flex-1 flex flex-col justify-between">
+                              <div>
+                                <div className="flex justify-between items-start gap-2 mb-1">
+                                  <h3 className="font-bold text-base text-slate-900 line-clamp-2 leading-tight">{livre.titre}</h3>
+                                  <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full shrink-0 ${
+                                    status === 'DISPONIBLE' ? 'bg-emerald-50 text-emerald-700' :
+                                    status === 'PENDING_VALIDATION' ? 'bg-amber-50 text-amber-700' : 
+                                    status === 'ALREADY_BORROWED' ? 'bg-blue-50 text-blue-700' : 'bg-slate-100 text-slate-500'
+                                  }`}>
+                                    {status === 'DISPONIBLE' ? 'Disponible' : 
+                                     status === 'PENDING_VALIDATION' ? 'À valider à l\'accueil' : 
+                                     status === 'ALREADY_BORROWED' ? 'En votre possession' : 'Indisponible'}
+                                  </span>
+                                </div>
+                                <p className="text-slate-500 text-sm font-medium">{livre.auteur}</p>
+                              </div>
+                              <div className="flex gap-2 mt-4">
+                                <button onClick={() => setSelectedBook(livre)} className="px-3 py-2 bg-slate-100 text-slate-700 rounded-lg font-bold text-xs flex items-center gap-1.5"><FaInfoCircle /> Détails</button>
+                                {status === 'DISPONIBLE' && (
+                                  <button disabled={isLoading} onClick={() => handleBorrow(livre.id)} className="flex-1 py-2 rounded-lg font-bold text-xs bg-[#C41C3B] text-white flex items-center justify-center gap-1.5">
+                                    {isLoading ? <span className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin inline-block" /> : <FaBook />} Demande d'emprunt
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
                 )}
-              </div>
-            )}
 
-            {activeTab === 'borrowings' && (
-              <div className="space-y-4 animate-fade-in">
-                <h2 className="text-2xl font-bold text-slate-900 font-serif">
-                  Mes Emprunts
-                </h2>
-                {myBorrowings.map((borrow) => (
-                  <div key={borrow.id} className="p-6 bg-white rounded-xl border border-slate-100 shadow-xs hover:scale-[1.005] transition-all">
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <h3 className="font-bold text-lg text-slate-900">
-                          {borrow.title}
+                {/* MES EMPRUNTS */}
+                {activeTab === 'borrowings' && (
+                  <div className="space-y-6">
+                    <h2 className="text-2xl font-bold text-slate-900 font-serif">Suivi de mes Emprunts</h2>
+
+                    {/* Section 1 : En attente de validation */}
+                    {attenteEmprunts.length > 0 && (
+                      <div className="bg-amber-50/40 p-6 rounded-2xl border border-amber-100">
+                        <h3 className="text-sm font-bold uppercase tracking-wider text-amber-600 mb-3 flex items-center gap-2">
+                          <FaClock /> Demandes en attente à l'accueil ({attenteEmprunts.length})
                         </h3>
-                        <p className="text-slate-500 text-sm">
-                          par {borrow.author}
-                        </p>
-                        <div className="grid grid-cols-2 gap-4 mt-4">
-                          <div className="bg-slate-50 p-2.5 rounded-lg border border-slate-100">
-                            <span className="text-[10px] uppercase font-bold text-slate-400 block">Date d'Emprunt</span>
-                            <span className="text-slate-700 text-sm font-semibold">{borrow.borrowDate}</span>
-                          </div>
-                          <div className="bg-red-50 p-2.5 rounded-lg border border-red-100">
-                            <span className="text-[10px] uppercase font-bold text-red-400 block">Date de Retour Attendue</span>
-                            <span className="text-red-700 text-sm font-semibold">{borrow.dueDate}</span>
-                          </div>
+                        <div className="space-y-3">
+                          {attenteEmprunts.map(emprunt => (
+                            <div key={emprunt.id} className="p-4 bg-white rounded-xl border border-amber-100 shadow-xs flex justify-between items-center">
+                              <div>
+                                <h4 className="font-bold text-slate-900">{emprunt.exemplaires[0]?.exemplaire.livre.titre}</h4>
+                                <p className="text-xs text-slate-500">Demande effectuée le {formatDate(emprunt.dateEmprunt)}</p>
+                                <p className="text-xs font-semibold text-amber-600 mt-2">👉 Présentez-vous devant l'administration pour récupérer l'ouvrage physique.</p>
+                              </div>
+                              <span className="text-xs px-2.5 py-1 bg-amber-100 text-amber-800 rounded-full font-bold">À valider</span>
+                            </div>
+                          ))}
                         </div>
                       </div>
-                      <span className="px-3 py-1 bg-emerald-50 text-emerald-700 text-xs font-bold rounded-full border border-emerald-200">
-                        {borrow.status}
-                      </span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
+                    )}
 
-            {activeTab === 'catalog' && (
-              <div className="animate-fade-in">
-                <div className="mb-8 font-sans">
-                  <h2 className="text-2xl font-bold mb-4 text-slate-900 font-serif">
-                    Catalogue Complet
-                  </h2>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                    <div className="relative">
-                      <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
-                      <input
-                        type="text"
-                        placeholder="Rechercher par titre, auteur..."
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        className="w-full pl-12 pr-4 py-3 border border-slate-200 rounded-lg text-slate-850 focus:outline-none focus:border-emerald-500 text-sm bg-white"
-                      />
-                    </div>
-                    <select
-                      value={categoryFilter}
-                      onChange={(e) => setCategoryFilter(e.target.value)}
-                      className="px-4 py-3 border border-slate-200 rounded-lg text-slate-700 text-sm bg-white cursor-pointer focus:outline-none focus:border-emerald-500"
-                    >
-                      <option value="All">Toutes les catégories</option>
-                      <option value="Fiction">Fiction</option>
-                      <option value="Littérature">Littérature</option>
-                      <option value="Science">Science</option>
-                    </select>
-                    <select
-                      value={availabilityFilter}
-                      onChange={(e) => setAvailabilityFilter(e.target.value)}
-                      className="px-4 py-3 border border-slate-200 rounded-lg text-slate-700 text-sm bg-white cursor-pointer focus:outline-none focus:border-emerald-500"
-                    >
-                      <option value="All">Tous les livres</option>
-                      <option value="available">Disponibles</option>
-                      <option value="unavailable">Réservés / Indisponibles</option>
-                    </select>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {filteredBooks.map((book) => (
-                    <div key={book.id} className="p-6 bg-white rounded-xl border border-slate-100 hover:shadow-lg hover:-translate-y-1 transition-all duration-300">
-                      <div className="flex justify-between items-start mb-3">
-                        <div>
-                          <h3 className="font-bold text-lg text-slate-900">
-                            {book.title}
-                          </h3>
-                          <p className="text-slate-500 text-sm">
-                            {book.author}
-                          </p>
+                    {/* Section 2 : Emprunts Actifs */}
+                    <div>
+                      <h3 className="text-sm font-bold uppercase tracking-wider text-slate-400 mb-3">Livres en ma possession ({activeEmprunts.length})</h3>
+                      {activeEmprunts.length === 0 ? (
+                        <p className="text-slate-400 text-sm bg-white p-4 rounded-xl border border-slate-100">Vous n'avez aucun livre en cours de lecture.</p>
+                      ) : (
+                        <div className="space-y-3">
+                          {activeEmprunts.map(emprunt => (
+                            <div key={emprunt.id} className="p-4 bg-white rounded-xl border border-slate-100 shadow-xs flex justify-between items-center">
+                              <div>
+                                <h4 className="font-bold text-slate-900">{emprunt.exemplaires[0]?.exemplaire.livre.titre}</h4>
+                                <p className="text-xs text-slate-500">Emprunté le {formatDate(emprunt.dateEmprunt)}</p>
+                              </div>
+                              <span className="text-xs px-2.5 py-1 bg-blue-100 text-blue-800 rounded-full font-bold">En cours de lecture</span>
+                            </div>
+                          ))}
                         </div>
-                        <div className="flex items-center gap-1 text-amber-500 font-bold bg-amber-50 px-2 py-1 rounded-md text-xs">
-                          <FaStar className="text-xs" /> {book.rating}
+                      )}
+                    </div>
+
+                    {/* Section 3 : Historique */}
+                    {pastEmprunts.length > 0 && (
+                      <div className="opacity-75">
+                        <h3 className="text-sm font-bold uppercase tracking-wider text-slate-400 mb-3">Livres retournés ({pastEmprunts.length})</h3>
+                        <div className="space-y-2">
+                          {pastEmprunts.map(emprunt => (
+                            <div key={emprunt.id} className="p-3 bg-slate-100 rounded-xl text-xs flex justify-between">
+                              <span className="font-medium text-slate-700">{emprunt.exemplaires[0]?.exemplaire.livre.titre}</span>
+                              <span className="text-slate-400">Rendu</span>
+                            </div>
+                          ))}
                         </div>
                       </div>
-                      <p className="text-xs font-bold text-slate-400 uppercase tracking-wide mb-4">
-                        Catégorie: <span className="text-slate-600">{book.category}</span>
-                      </p>
-                      <button
-                        disabled={!book.available}
-                        onClick={() => handleReserve(book.id)}
-                        className={`w-full py-2.5 rounded-lg font-bold text-sm transition-all cursor-pointer ${
-                          book.available 
-                            ? 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs' 
-                            : 'bg-slate-100 text-slate-400 cursor-not-allowed border border-slate-200'
-                        }`}
-                      >
-                        {book.available ? '📌 Réserver l\'ouvrage' : '🔒 Indisponible'}
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              </div>
+                    )}
+                  </div>
+                )}
+
+                {/* RESERVATIONS */}
+                {activeTab === 'reservations' && (
+                  <div className="space-y-4">
+                    <h2 className="text-2xl font-bold text-slate-900 font-serif">Mes Réservations</h2>
+                    {activeReservations.length === 0 ? (
+                      <div className="border border-dashed border-slate-200 rounded-2xl p-8 text-center bg-white">
+                        <p className="text-slate-500">Aucune réservation en cours.</p>
+                      </div>
+                    ) : (
+                      activeReservations.map(res => (
+                        <div key={res.id} className="p-4 bg-white rounded-xl border border-slate-100 flex justify-between items-center">
+                          <div>
+                            <h3 className="font-bold text-slate-900">{res.exemplaire.livre.titre}</h3>
+                            <p className="text-xs text-slate-400">Réservé le {formatDate(res.createdAt)}</p>
+                          </div>
+                          <button onClick={() => handleCancelReservation(res.id)} className="px-3 py-1.5 bg-slate-200 text-slate-700 rounded-lg text-xs font-bold">Annuler</button>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                )}
+              </>
             )}
           </div>
         </section>
       </main>
+
+      {/* Détails Modal */}
+      {selectedBook && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl max-w-xl w-full p-6 relative flex gap-6">
+            <button onClick={() => setSelectedBook(null)} className="absolute top-4 right-4 p-2 bg-slate-50 rounded-full"><FaTimes /></button>
+            <div className="w-32 h-48 bg-slate-100 rounded-xl overflow-hidden shrink-0 border">
+              {selectedBook.imageUrl && <img src={selectedBook.imageUrl} alt={selectedBook.titre} className="w-full h-full object-cover" />}
+            </div>
+            <div>
+              <span className="text-xs font-bold uppercase tracking-wider text-[#C41C3B]">{selectedBook.categorie || 'Général'}</span>
+              <h2 className="text-xl font-bold text-slate-900 mt-1 font-serif">{selectedBook.titre}</h2>
+              <p className="text-slate-500 text-sm mb-4">par {selectedBook.auteur}</p>
+              {getBookStatus(selectedBook, emprunts, reservations) === 'DISPONIBLE' && (
+                <button onClick={() => handleBorrow(selectedBook.id)} className="w-full py-2.5 bg-[#C41C3B] text-white font-bold rounded-xl text-xs flex items-center justify-center gap-2">
+                  <FaBook /> Confirmer la demande d'emprunt
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
+

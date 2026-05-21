@@ -2,14 +2,14 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
-import { useRouter } from 'next/navigation';
 import { FaBookReader, FaSignOutAlt, FaUser } from 'react-icons/fa';
+import { useAuth } from '@/context/AuthContext';
 
 export default function LibrarianNavbar() {
-  const router = useRouter();
+  const { logout, user } = useAuth();
 
   const handleLogout = () => {
-    router.push('/');
+    logout();
   };
 
   return (
@@ -38,7 +38,7 @@ export default function LibrarianNavbar() {
           <div className="hidden md:flex items-center gap-6 h-full">
             <div className="flex items-center gap-1.5 text-sm font-semibold text-blue-700 bg-blue-50/50 px-3 py-1.5 rounded-lg">
               <FaUser className="text-xs" />
-              <span>Sarah (Bibliothécaire)</span>
+              <span>{user?.nom ?? 'Bibliothécaire'}</span>
             </div>
           </div>
 

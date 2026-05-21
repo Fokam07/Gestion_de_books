@@ -1,199 +1,136 @@
-'use client';
+﻿'use client';
 
+import { useEffect, useState } from 'react';
 import Image from 'next/image';
-import { FaStar } from 'react-icons/fa';
+import { livresApi, Livre } from '@/lib/api';
+import { FaBook, FaTimes, FaBarcode, FaBuilding, FaCalendarAlt, FaBookmark, FaInfoCircle } from 'react-icons/fa';
 
-// --- DONNÉES FICTIVES AMÉLIORÉES ---
-// Nous enlevons les paramètres de dimension des URLs pour laisser Next.js optimiser
-const books = [
-  {
-    id: 1,
-    title: 'The Great Gatsby',
-    author: 'F. Scott Fitzgerald',
-    image: 'https://images.unsplash.com/photo-1544947950-fa07a98d237f',
-    rating: 4.5,
-    available: true,
-    category: 'Fiction',
-  },
-  {
-    id: 2,
-    title: 'To Kill a Mockingbird',
-    author: 'Harper Lee',
-    image: 'https://images.unsplash.com/photo-1507842217343-583f20270319',
-    rating: 4.8,
-    available: true,
-    category: 'Littérature',
-  },
-  {
-    id: 3,
-    title: '1984',
-    author: 'George Orwell',
-    image: 'https://images.unsplash.com/photo-1519452575417-564c1401ecc0',
-    rating: 4.6,
-    available: false,
-    category: 'Fiction',
-  },
-  {
-    id: 4,
-    title: 'Pride and Prejudice',
-    author: 'Jane Austen',
-    image: 'https://images.unsplash.com/photo-1543002588-d83cea6bfb4f',
-    rating: 4.7,
-    available: true,
-    category: 'Littérature',
-  },
-  {
-    id: 5,
-    title: 'The Hobbit',
-    author: 'J.R.R. Tolkien',
-    image: 'https://images.unsplash.com/photo-1506880018603-83d5b814b5a6',
-    rating: 4.9,
-    available: true,
-    category: 'Fiction',
-  },
-  {
-    id: 6,
-    title: 'Sapiens',
-    author: 'Yuval Noah Harari',
-    image: 'https://images.unsplash.com/photo-1476275466078-4007374d2dba',
-    rating: 4.4,
-    available: true,
-    category: 'Science',
-  },
-  {
-    id: 7,
-    title: 'The Catcher in the Rye',
-    author: 'J.D. Salinger',
-    image: 'https://images.unsplash.com/photo-1491841573634-28fb1df537d3',
-    rating: 4.2,
-    available: true,
-    category: 'Littérature',
-  },
-  {
-    id: 8,
-    title: 'Atomic Habits',
-    author: 'James Clear',
-    image: 'https://images.unsplash.com/photo-1553632032-e5bf4bfaae6c',
-    rating: 4.7,
-    available: false,
-    category: 'Développement Personnel',
-  },
-  {
-    id: 9,
-    title: 'The Book Thief',
-    author: 'Markus Zusak',
-    image: 'https://images.unsplash.com/photo-1484627580022-9937c1cb63d0',
-    rating: 4.6,
-    available: true,
-    category: 'Littérature',
-  },
-  {
-    id: 10,
-    title: 'A Brief History of Time',
-    author: 'Stephen Hawking',
-    image: 'https://images.unsplash.com/photo-1508284307175-bc9cab375b1d',
-    rating: 4.3,
-    available: true,
-    category: 'Science',
-  },
-];
+interface BooksGridProps {
+  searchQuery?: string;
+  selectedCategory?: string; // 👈 Pris en compte
+  availabilityFilter?: string;
+}
 
-export default function BooksGrid() {
+export default function BooksGrid({ searchQuery = '', selectedCategory = '', availabilityFilter = 'All' }: BooksGridProps) {
+  const [livres, setLivres] = useState<Livre[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [selectedBook, setSelectedBook] = useState<Livre | null>(null);
+
+  useEffect(() => {
+    livresApi.getAll()
+      .then(res => setLivres(res.data))
+      .catch(() => {})
+      .finally(() => setIsLoading(false));
+  }, []);
+
+  const filtered = livres.filter(livre => {
+    // 1. Filtre par recherche texte
+    const matchesSearch =
+      !searchQuery ||
+      livre.titre.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      livre.auteur.toLowerCase().includes(searchQuery.toLowerCase());
+
+    // 2. Filtre par Catégorie
+    const matchesCategory = !selectedCategory || livre.categorie === selectedCategory;
+
+    // 3. Filtre par disponibilité
+    const hasAvailable = livre.exemplaires.some(e => e.statut === 'DISPONIBLE');
+    const matchesAvailability =
+      availabilityFilter === 'All' ||
+      (availabilityFilter === 'available' && hasAvailable) ||
+      (availabilityFilter === 'unavailable' && !hasAvailable);
+
+    return matchesSearch && matchesCategory && matchesAvailability;
+  });
+
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center py-20">
+        <span className="inline-block w-8 h-8 border-4 border-[#C41C3B] border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  if (filtered.length === 0) {
+    return (
+      <div className="py-20 text-center text-slate-400">
+        <p className="text-4xl mb-3">📚</p>
+        <p className="font-medium">Aucun livre ne correspond à vos filtres actuels.</p>
+      </div>
+    );
+  }
+
   return (
-    <section className="py-24 px-6 md:px-10 bg-gradient-to-b from-white to-slate-50 relative overflow-hidden">
-      {/* Decorative radial gradients for high-end look */}
-      <div className="absolute top-1/4 left-1/10 w-96 h-96 bg-red-100/30 rounded-full blur-3xl pointer-events-none -z-10" />
-      <div className="absolute bottom-1/4 right-1/10 w-96 h-96 bg-slate-200/40 rounded-full blur-3xl pointer-events-none -z-10" />
-
-      <div className="max-w-7xl mx-auto">
-        <h2 className="text-5xl font-extrabold text-center mb-5 text-slate-950 font-serif tracking-tight animate-fade-in">
-          Nos Ouvrages <span className="text-[#C41C3B] relative inline-block after:absolute after:-bottom-1 after:left-0 after:w-full after:h-1 after:bg-[#C41C3B]/20 after:rounded-full">Populaires</span>
-        </h2>
-        <p className="text-center mb-16 text-slate-600 text-xl font-light tracking-wide max-w-2xl mx-auto">
-          Découvrez une sélection de livres recommandés par nos membres et notre équipe éditoriale.
-        </p>
-
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-x-8 gap-y-12">
-          {books.map((book) => (
-            <div
-              key={book.id}
-              className="flex flex-col rounded-xl overflow-hidden border border-slate-100 shadow-sm hover:shadow-2xl hover:border-red-100 transition-all duration-500 transform hover:-translate-y-3 cursor-pointer bg-white group"
-            >
-              {/* Book Image Container */}
-              <div className="relative aspect-[2/3] w-full bg-slate-100 overflow-hidden border-b border-slate-100">
-                <Image
-                  src={book.image}
-                  alt={book.title}
-                  fill
-                  className="object-cover group-hover:scale-110 transition-transform duration-700 ease-out"
-                  sizes="(max-w-7xl) 20vw" // Optimisation Next.js
-                />
-                <div className="absolute inset-0 bg-slate-950/0 group-hover:bg-slate-950/20 transition-colors duration-500" />
-                {!book.available && (
-                  <div className="absolute inset-0 bg-slate-950/80 flex items-center justify-center backdrop-blur-xs">
-                    <span className="text-white font-bold text-center px-4 py-1.5 bg-slate-900/90 rounded-lg uppercase tracking-wider text-xs border border-white/10 shadow-lg">
-                      🔒 Réservé
-                    </span>
-                  </div>
-                )}
-              </div>
-
-              {/* Book Info */}
-              <div className="p-5 flex flex-col flex-grow relative bg-white">
-                <p
-                  className="inline-block text-[11px] font-bold px-3 py-1 rounded-full mb-3 self-start uppercase tracking-wider transition-all duration-300 group-hover:scale-105"
-                  style={{
-                    backgroundColor: '#FDF2F2', // Rouge très pâle
-                    color: '#C41C3B',
-                  }}
-                >
-                  {book.category}
-                </p>
-
-                <h3 className="font-bold text-base line-clamp-1 mb-1.5 text-slate-900 font-serif group-hover:text-[#C41C3B] transition-colors duration-300">
-                  {book.title}
-                </h3>
-                <p className="text-xs mb-4 text-slate-500 font-medium tracking-wide">
-                  par <span className="text-slate-700">{book.author}</span>
-                </p>
-
-                {/* Rating & Button Container */}
-                <div className="mt-auto">
-                  <div className="flex items-center gap-2 mb-4">
-                    <div className="flex items-center gap-0.5">
-                      {[...Array(5)].map((_, i) => (
-                        <FaStar
-                          key={i}
-                          size={13}
-                          className="transition-transform duration-300 group-hover:scale-120"
-                          style={{
-                            color: i < Math.floor(book.rating) ? '#FFC107' : '#E2E8F0', // slate-200
-                            transitionDelay: `${i * 50}ms`
-                          }}
-                        />
-                      ))}
+    <section className="py-12 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-6xl mx-auto">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          {filtered.map((livre) => {
+            const disponibles = livre.exemplaires.filter(e => e.statut === 'DISPONIBLE').length;
+            const hasAvailable = disponibles > 0;
+            return (
+              <div 
+                key={livre.id} 
+                onClick={() => setSelectedBook(livre)}
+                className="bg-white rounded-xl border border-slate-100 shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300 overflow-hidden cursor-pointer group flex flex-col justify-between"
+              >
+                <div>
+                  <div className="relative h-64 bg-slate-100 w-full">
+                    {livre.imageUrl ? (
+                      <Image src={livre.imageUrl} alt={livre.titre} fill className="object-cover" sizes="25vw" />
+                    ) : (
+                      <div className="absolute inset-0 flex flex-col items-center justify-center text-slate-300 bg-slate-50">
+                        <FaBook className="text-4xl mb-2" />
+                      </div>
+                    )}
+                    <div className={`absolute top-3 right-3 px-2.5 py-1 rounded-full text-xs font-bold ${
+                      hasAvailable ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'
+                    }`}>
+                      {hasAvailable ? `${disponibles} dispo.` : 'Indisponible'}
                     </div>
-                    <span className="text-sm font-semibold text-slate-500">
-                      {book.rating.toFixed(1)}
-                    </span>
                   </div>
-
-                  <button
-                    className={`w-full py-3 rounded-lg font-bold text-white text-xs uppercase tracking-wider transition-all duration-300 shadow-md ${
-                      book.available
-                        ? 'bg-slate-900 hover:bg-[#C41C3B] hover:shadow-red-200/50 hover:shadow-lg active:scale-95'
-                        : 'bg-slate-200 text-slate-400 cursor-not-allowed shadow-none'
-                    }`}
-                    disabled={!book.available}
-                  >
-                    {book.available ? '⚡ Réserver' : 'Indisponible'}
-                  </button>
+                  <div className="p-5">
+                    <h3 className="font-bold text-slate-900 text-base leading-tight mb-1 line-clamp-2">{livre.titre}</h3>
+                    <p className="text-slate-500 text-sm mb-2">{livre.auteur}</p>
+                  </div>
+                </div>
+                <div className="px-5 pb-5">
+                  <div className="w-full py-2 bg-slate-50 text-slate-600 rounded-lg flex items-center justify-center gap-2 text-xs font-bold border border-slate-100">
+                    <FaInfoCircle /> Voir les détails
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
+
+      {/* Modal Détails */}
+      {selectedBook && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center z-50 p-4" onClick={() => setSelectedBook(null)}>
+          <div className="bg-white rounded-2xl max-w-xl w-full shadow-2xl border border-slate-100 overflow-hidden relative flex flex-col md:flex-row" onClick={(e) => e.stopPropagation()}>
+            <div className="w-full md:w-44 bg-slate-50 p-6 flex items-center justify-center border-b md:border-r border-slate-100">
+              <div className="w-32 h-48 bg-white rounded-xl overflow-hidden border border-slate-200 relative shadow-md">
+                {selectedBook.imageUrl ? <img src={selectedBook.imageUrl} alt={selectedBook.titre} className="w-full h-full object-cover" /> : <FaBook className="text-4xl text-slate-200 m-auto" />}
+              </div>
+            </div>
+            <div className="p-6 flex-1 flex flex-col justify-between">
+              <div>
+                <button onClick={() => setSelectedBook(null)} className="absolute top-4 right-4 text-slate-400 p-2 rounded-full"><FaTimes /></button>
+                {selectedBook.categorie && <span className="text-[10px] bg-red-50 text-[#C41C3B] font-extrabold uppercase tracking-widest px-2.5 py-1 rounded-md">{selectedBook.categorie}</span>}
+                <h2 className="text-xl font-black text-slate-800 mt-2 font-serif">{selectedBook.titre}</h2>
+                <p className="text-slate-500 text-sm mb-4">par {selectedBook.auteur}</p>
+                <div className="space-y-2 border-t border-slate-100 pt-3 text-slate-600 text-sm">
+                  {selectedBook.isbn && <div className="flex items-center gap-2"><FaBarcode className="text-slate-400" /> <span><strong>ISBN :</strong> {selectedBook.isbn}</span></div>}
+                  {selectedBook.editeur && <div className="flex items-center gap-2"><FaBuilding className="text-slate-400" /> <span><strong>Éditeur :</strong> {selectedBook.editeur}</span></div>}
+                  {selectedBook.annee && <div className="flex items-center gap-2"><FaCalendarAlt className="text-slate-400" /> <span><strong>Année :</strong> {selectedBook.annee}</span></div>}
+                  {selectedBook.collection && <div className="flex items-center gap-2"><FaBookmark className="text-slate-400" /> <span><strong>Collection :</strong> {selectedBook.collection}</span></div>}
+                </div>
+              </div>
+              <p className="text-xs text-slate-400 text-center mt-6">Connectez-vous pour réserver ou emprunter cet ouvrage.</p>
+            </div>
+          </div>
+        </div>
+      )}
     </section>
   );
 }

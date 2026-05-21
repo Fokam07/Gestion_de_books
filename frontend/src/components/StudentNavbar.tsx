@@ -2,15 +2,14 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { FaGraduationCap, FaBook, FaClock, FaSignOutAlt, FaUser } from 'react-icons/fa';
+import { useAuth } from '@/context/AuthContext';
 
 export default function StudentNavbar() {
-  const router = useRouter();
+  const { logout, user } = useAuth();
 
   const handleLogout = () => {
-    router.push('/');
+    logout();
   };
 
   return (
@@ -39,7 +38,7 @@ export default function StudentNavbar() {
           <div className="hidden md:flex items-center gap-6 h-full">
             <div className="flex items-center gap-1.5 text-sm font-semibold text-emerald-700 bg-emerald-50/50 px-3 py-1.5 rounded-lg">
               <FaUser className="text-xs" />
-              <span>Jean Dupont</span>
+              <span>{user?.nom ?? 'Étudiant'}</span>
             </div>
           </div>
 

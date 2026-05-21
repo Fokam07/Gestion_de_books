@@ -2,12 +2,12 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { FaUser, FaEnvelope, FaLock, FaPhone, FaUserPlus } from 'react-icons/fa';
-import Image from 'next/image';
+import { useAuth } from '@/context/AuthContext';
+import { AxiosError } from 'axios';
 
 export default function RegisterPage() {
-  const router = useRouter();
+  const { register } = useAuth();
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -16,6 +16,8 @@ export default function RegisterPage() {
     confirmPassword: '',
     agreeTerms: false,
   });
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value, type, checked } = e.currentTarget;
@@ -25,18 +27,35 @@ export default function RegisterPage() {
     });
   };
 
-  const handleRegister = (e: React.FormEvent) => {
+  const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('Register:', formData);
-    // Simulating successful registration -> redirecting to login page
-    router.push('/auth/login');
+    setError('');
+
+    if (formData.password !== formData.confirmPassword) {
+      setError('Les mots de passe ne correspondent pas.');
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      await register({ nom: formData.name, email: formData.email, password: formData.password });
+      // AuthContext redirects to /auth/login after success
+    } catch (err) {
+      const axiosErr = err as AxiosError<{ message: string }>;
+      setError(
+        axiosErr.response?.data?.message ||
+        'Une erreur est survenue. Veuillez réessayer.'
+      );
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-emerald-50 to-slate-50 py-12 px-4 flex items-center justify-center">
+    <div className="min-h-screen bg-slate-50 py-12 px-4 flex items-center justify-center">
       <div className="max-w-xl w-full">
         <div className="text-center mb-8">
-          <span className="text-4xl font-extrabold tracking-tight bg-gradient-to-r from-teal-500 to-emerald-600 bg-clip-text text-transparent">
+          <span className="text-4xl font-extrabold tracking-tight text-[#C41C3B]">
             Shelfio
           </span>
           <h1 className="text-3xl font-black mt-4 text-slate-800 font-serif">
@@ -48,8 +67,16 @@ export default function RegisterPage() {
         </div>
 
         <div className="bg-white rounded-2xl shadow-xl p-8 sm:p-10 border border-slate-100">
+
+          {/* Error Banner */}
+          {error && (
+            <div className="mb-5 px-4 py-3 bg-red-50 border border-red-200 text-red-700 text-sm rounded-xl font-medium">
+              {error}
+            </div>
+          )}
+
           <form onSubmit={handleRegister} className="space-y-5">
-            {/* Name */}
+            {/* Nom */}
             <div>
               <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">
                 Nom complet
@@ -150,27 +177,28 @@ export default function RegisterPage() {
                 name="agreeTerms"
                 checked={formData.agreeTerms}
                 onChange={handleChange}
-                className="w-5 h-5 mt-1 accent-emerald-600 rounded border-slate-300 focus:ring-0"
+                className="w-5 h-5 mt-1 rounded border-slate-300 focus:ring-0"
               />
               <span className="text-sm text-slate-600">
                 J'accepte les{' '}
-                <Link href="#" className="font-semibold text-emerald-600 hover:underline">
-                  conditions d'utilisation
-                </Link>{' '}
-                et la{' '}
-                <Link href="#" className="font-semibold text-emerald-600 hover:underline">
-                  politique de confidentialité
-                </Link>
+                <Link href="#" className="font-semibold text-[#C41C3B] hover:underline">conditions d'utilisation</Link>
+                {' '}et la{' '}
+                <Link href="#" className="font-semibold text-[#C41C3B] hover:underline">politique de confidentialité</Link>
               </span>
             </label>
 
-            {/* Submit Button */}
+            {/* Submit */}
             <button
               type="submit"
-              disabled={!formData.agreeTerms}
-              className="w-full py-3.5 rounded-xl text-white font-bold text-sm transition-all shadow-xs hover:shadow-md flex items-center justify-center gap-2 mt-8 disabled:opacity-50 disabled:cursor-not-allowed bg-emerald-600 hover:bg-emerald-700 cursor-pointer"
+              disabled={!formData.agreeTerms || isLoading}
+              className="w-full py-3.5 rounded-xl text-white font-bold text-sm transition-all hover:shadow-md flex items-center justify-center gap-2 mt-8 disabled:opacity-50 disabled:cursor-not-allowed bg-[#C41C3B] hover:bg-[#a81430] cursor-pointer"
             >
-              <FaUserPlus /> Créer mon compte étudiant
+              {isLoading ? (
+                <span className="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+              ) : (
+                <FaUserPlus />
+              )}
+              {isLoading ? 'Création en cours...' : 'Créer mon compte étudiant'}
             </button>
           </form>
 
@@ -189,7 +217,7 @@ export default function RegisterPage() {
           {/* Login Link */}
           <p className="text-center text-sm text-slate-600">
             Vous avez déjà un compte ?{' '}
-            <Link href="/auth/login" className="font-bold text-emerald-600 hover:underline">
+            <Link href="/auth/login" className="font-bold text-[#C41C3B] hover:underline">
               Se connecter
             </Link>
           </p>
@@ -198,5 +226,5 @@ export default function RegisterPage() {
     </div>
   );
 }
-  );
-}
+
+
