@@ -5,7 +5,7 @@ const empruntInclude = {
     include: {
       exemplaire: {
         include: {
-          livre: { select: { id: true, titre: true, auteur: true } }
+          livre: { select: { id: true, titre: true, auteur: true, imageUrl: true } }
         }
       }
     }
@@ -30,9 +30,11 @@ export const creerEmprunt = async (userId, exemplaireIds) => {
       throw err;
     }
 
+    // Emprunt créé en ATTENTE — l'admin valide quand l'adhérent se présente
     const emprunt = await tx.emprunt.create({
       data: {
         userId,
+        statut: 'ATTENTE',
         exemplaires: {
           create: exemplaireIds.map(exemplaireId => ({ exemplaireId }))
         }
@@ -40,6 +42,7 @@ export const creerEmprunt = async (userId, exemplaireIds) => {
       include: empruntInclude
     });
 
+    // Bloquer les exemplaires dès la demande pour éviter les doubles réservations
     await tx.exemplaire.updateMany({
       where: { id: { in: exemplaireIds } },
       data: { statut: 'EMPRUNTE' }
@@ -49,7 +52,23 @@ export const creerEmprunt = async (userId, exemplaireIds) => {
   });
 };
 
-export const retournerEmprunt = async (empruntId, userId) => {
+// Admin : valide la remise physique du livre (ATTENTE → EN_COURS)
+export const validerEmprunt = async (empruntId) => {
+  return await prisma.$transaction(async (tx) => {
+    const emprunt = await tx.emprunt.findUnique({ where: { id: empruntId } });
+    if (!emprunt) throw new Error('NOT_FOUND');
+    if (emprunt.statut !== 'ATTENTE') throw new Error('NOT_ATTENTE');
+
+    return tx.emprunt.update({
+      where: { id: empruntId },
+      data: { statut: 'EN_COURS' },
+      include: empruntInclude
+    });
+  });
+};
+
+// Admin : valide le retour physique du livre (EN_COURS → RETOURNE)
+export const validerRetourAdmin = async (empruntId) => {
   return await prisma.$transaction(async (tx) => {
     const emprunt = await tx.emprunt.findUnique({
       where: { id: empruntId },
@@ -57,26 +76,22 @@ export const retournerEmprunt = async (empruntId, userId) => {
     });
 
     if (!emprunt) throw new Error('NOT_FOUND');
-    if (emprunt.userId !== userId) throw new Error('FORBIDDEN');
     if (emprunt.statut === 'RETOURNE') throw new Error('ALREADY_RETURNED');
 
     const exemplaireIds = emprunt.exemplaires.map(e => e.exemplaireId);
 
-    // Pour chaque exemplaire : vérifier si une réservation ACTIVE l'attend
     for (const exemplaireId of exemplaireIds) {
       const reservation = await tx.reservation.findFirst({
         where: { exemplaireId, statut: 'ACTIVE' }
       });
 
-      // Switch : si réservation → l'exemplaire reste RESERVE (pas DISPONIBLE)
-      // Si pas de réservation → il redevient DISPONIBLE
       await tx.exemplaire.update({
         where: { id: exemplaireId },
         data: { statut: reservation ? 'RESERVE' : 'DISPONIBLE' }
       });
     }
 
-    return await tx.emprunt.update({
+    return tx.emprunt.update({
       where: { id: empruntId },
       data: { statut: 'RETOURNE', dateRetour: new Date() },
       include: empruntInclude

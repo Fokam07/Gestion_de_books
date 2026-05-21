@@ -26,16 +26,28 @@ export const creerEmprunt = async (req, res, next) => {
   }
 };
 
-export const retournerEmprunt = async (req, res, next) => {
+export const validerEmprunt = async (req, res, next) => {
   try {
     const empruntId = parseInt(req.params.id);
-    const emprunt = await empruntService.retournerEmprunt(empruntId, req.user.id);
+    const emprunt = await empruntService.validerEmprunt(empruntId);
     res.json(emprunt);
   } catch (error) {
     if (error.message === 'NOT_FOUND')
       return res.status(404).json({ message: "Emprunt introuvable" });
-    if (error.message === 'FORBIDDEN')
-      return res.status(403).json({ message: "Cet emprunt ne vous appartient pas" });
+    if (error.message === 'NOT_ATTENTE')
+      return res.status(409).json({ message: "Cet emprunt n'est pas en attente de validation" });
+    next(error);
+  }
+};
+
+export const validerRetourAdmin = async (req, res, next) => {
+  try {
+    const empruntId = parseInt(req.params.id);
+    const emprunt = await empruntService.validerRetourAdmin(empruntId);
+    res.json(emprunt);
+  } catch (error) {
+    if (error.message === 'NOT_FOUND')
+      return res.status(404).json({ message: "Emprunt introuvable" });
     if (error.message === 'ALREADY_RETURNED')
       return res.status(409).json({ message: "Cet emprunt a déjà été retourné" });
     next(error);

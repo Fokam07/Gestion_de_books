@@ -133,3 +133,25 @@ Lancer les tests et corriger les échecs
     Edition du fichier globalSetup.cjs
     Creation du folder tests/helpers
     Ajout des Scripts de Test dans le fichier package.json 
+
+
+
+je suis ne pas  tres satisfait de la logique metier implementer dans le frontend 
+
+User :  
+ - dans la section Section Emprunts En Cour doit pouvoir voir cliquer et voir les   le details de son emprunt ( information et meme image du livre)
+ - Lorsque qu'il clique sur Emprunter un livre l'umprunt passe effectivement sur en  En Cours  mais il devrait passer sur ATTENTE et l'admin devrait avoir la possibite de valider l' umprunt dans son espace une fois que le user se presente pour effectuer le retrait , dans ce  cas dans son  espace le user on passerait ATTENTE A  En Cours 
+ - parreil pour le retour c'est l'admin qui devrait valider le retour du livre pour que le status de l'Emprunt soit changé
+ - mettre un espace de filtre par nom et categorie pour les livres juste en bas du hero banner et aussi sur la nav si ca te semble pertinent 
+
+ Admin : 
+    - filtrer les livres par categorie et par nom , avoir une section pour la gestion des retour  et gestion des Emprunt pour valider le retour et les emprunt on pourra egalment mettre un filtre par nom de l'Emprunteur et du Retouneur pour vite s'y retrouver 
+
+Modification recente apporte au code 
+    - ajout de ATTENTE  dans 
+    enum EmpruntStatus {
+        ATTENTE
+        EN_COURS
+        RETOURNE
+        EN_RETARD
+    }   

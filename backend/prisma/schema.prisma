@@ -42,6 +42,7 @@ model Livre {
   imageUrl    String?
   editeur     String?
   collection  String?
+  categorie   Categorie?
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
   exemplaires Exemplaire[]
@@ -98,6 +99,20 @@ model Reservation {
   exemplaire      Exemplaire @relation(fields: [exemplaireId], references: [id])
 }
 
+enum Categorie {
+  ROMAN
+  SCIENCE_FICTION
+  FANTASY
+  POLICIER
+  BIOGRAPHIE
+  HISTOIRE
+  SCIENCE
+  DEVELOPPEMENT_PERSONNEL
+  JEUNESSE
+  PHILOSOPHIE
+  INFORMATIQUE
+}
+
 enum ReservationStatus {
   ACTIVE
   HONOREE
@@ -113,6 +128,7 @@ enum ExemplaireStatus {
 }
 
 enum EmpruntStatus {
+  ATTENTE
   EN_COURS
   RETOURNE
   EN_RETARD

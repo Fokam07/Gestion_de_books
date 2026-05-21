@@ -1,15 +1,21 @@
 import * as livreService from '../services/livreService.js';
 import { z } from 'zod';
 
-const livreSchema = z.object({
-  titre: z.string().min(1, "Titre obligatoire"),
-  auteur: z.string().min(1, "Auteur obligatoire"),
-  annee: z.number().optional(),
-  isbn: z.string().optional(),
-  editeur: z.string().optional(),
-  collection: z.string().optional(),
-  imageUrl:   z.string().url("URL invalide").optional(), // ← ajouter
+const CATEGORIES = [
+  'ROMAN', 'SCIENCE_FICTION', 'FANTASY', 'POLICIER',
+  'BIOGRAPHIE', 'HISTOIRE', 'SCIENCE',
+  'DEVELOPPEMENT_PERSONNEL', 'JEUNESSE', 'PHILOSOPHIE', 'INFORMATIQUE',
+];
 
+const livreSchema = z.object({
+  titre:      z.string().min(1, "Titre obligatoire"),
+  auteur:     z.string().min(1, "Auteur obligatoire"),
+  annee:      z.number().optional(),
+  isbn:       z.string().optional(),
+  editeur:    z.string().optional(),
+  collection: z.string().optional(),
+  imageUrl:   z.string().url("URL invalide").optional(),
+  categorie:  z.enum(CATEGORIES, { errorMap: () => ({ message: "Catégorie invalide" }) }).optional(),
 });
 
 export const getLivres = async (_req, res) => {

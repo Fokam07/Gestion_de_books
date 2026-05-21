@@ -22,7 +22,7 @@ const setupLivreEtExemplaire = async (admin) => {
 };
 
 describe('POST /api/emprunts', () => {
-  it('emprunte un exemplaire disponible -> 201, statut EMPRUNTE', async () => {
+  it('emprunte un exemplaire disponible -> 201, statut ATTENTE, exemplaire EMPRUNTE', async () => {
     const admin = await createUser({ role: 'admin' });
     const user = await createUser({ suffix: 'u2' });
     const { exemplaireId } = await setupLivreEtExemplaire(admin);
@@ -33,9 +33,11 @@ describe('POST /api/emprunts', () => {
       .send({ exemplaireIds: [exemplaireId] });
 
     expect(res.status).toBe(201);
-    expect(res.body.statut).toBe('EN_COURS');
+    // La demande est créée en ATTENTE — l'admin valide au comptoir
+    expect(res.body.statut).toBe('ATTENTE');
     expect(res.body.exemplaires).toHaveLength(1);
 
+    // L'exemplaire est immédiatement bloqué pour éviter les doubles réservations
     const ex = await prisma.exemplaire.findUnique({ where: { id: exemplaireId } });
     expect(ex.statut).toBe('EMPRUNTE');
   });
@@ -75,8 +77,92 @@ describe('POST /api/emprunts', () => {
   });
 });
 
-describe('PATCH /api/emprunts/:id/retourner', () => {
-  it('retourne les exemplaires -> statut RETOURNE + exemplaire DISPONIBLE', async () => {
+describe('PATCH /api/emprunts/:id/valider (admin)', () => {
+  it('valide un emprunt ATTENTE -> EN_COURS', async () => {
+    const admin = await createUser({ role: 'admin' });
+    const user = await createUser({ suffix: 'u2' });
+    const { exemplaireId } = await setupLivreEtExemplaire(admin);
+
+    const emprunt = await request(app)
+      .post('/api/emprunts')
+      .set('Authorization', user.authHeader)
+      .send({ exemplaireIds: [exemplaireId] });
+
+    expect(emprunt.body.statut).toBe('ATTENTE');
+
+    const res = await request(app)
+      .patch(`/api/emprunts/${emprunt.body.id}/valider`)
+      .set('Authorization', admin.authHeader);
+
+    expect(res.status).toBe(200);
+    expect(res.body.statut).toBe('EN_COURS');
+  });
+
+  it('refuse pour un non-admin -> 403', async () => {
+    const admin = await createUser({ role: 'admin' });
+    const user = await createUser({ suffix: 'u2' });
+    const { exemplaireId } = await setupLivreEtExemplaire(admin);
+
+    const emprunt = await request(app)
+      .post('/api/emprunts')
+      .set('Authorization', user.authHeader)
+      .send({ exemplaireIds: [exemplaireId] });
+
+    const res = await request(app)
+      .patch(`/api/emprunts/${emprunt.body.id}/valider`)
+      .set('Authorization', user.authHeader);
+
+    expect(res.status).toBe(403);
+  });
+
+  it('refuse si statut != ATTENTE -> 409', async () => {
+    const admin = await createUser({ role: 'admin' });
+    const user = await createUser({ suffix: 'u2' });
+    const { exemplaireId } = await setupLivreEtExemplaire(admin);
+
+    const emprunt = await request(app)
+      .post('/api/emprunts')
+      .set('Authorization', user.authHeader)
+      .send({ exemplaireIds: [exemplaireId] });
+
+    // Valider une première fois
+    await request(app)
+      .patch(`/api/emprunts/${emprunt.body.id}/valider`)
+      .set('Authorization', admin.authHeader);
+
+    // Tenter de valider une seconde fois (déjà EN_COURS)
+    const res = await request(app)
+      .patch(`/api/emprunts/${emprunt.body.id}/valider`)
+      .set('Authorization', admin.authHeader);
+
+    expect(res.status).toBe(409);
+  });
+});
+
+describe('PATCH /api/emprunts/:id/retourner (admin)', () => {
+  it('valide le retour -> statut RETOURNE + exemplaire DISPONIBLE', async () => {
+    const admin = await createUser({ role: 'admin' });
+    const user = await createUser({ suffix: 'u2' });
+    const { exemplaireId } = await setupLivreEtExemplaire(admin);
+
+    const emprunt = await request(app)
+      .post('/api/emprunts')
+      .set('Authorization', user.authHeader)
+      .send({ exemplaireIds: [exemplaireId] });
+
+    const res = await request(app)
+      .patch(`/api/emprunts/${emprunt.body.id}/retourner`)
+      .set('Authorization', admin.authHeader);
+
+    expect(res.status).toBe(200);
+    expect(res.body.statut).toBe('RETOURNE');
+    expect(res.body.dateRetour).not.toBeNull();
+
+    const ex = await prisma.exemplaire.findUnique({ where: { id: exemplaireId } });
+    expect(ex.statut).toBe('DISPONIBLE');
+  });
+
+  it('refuse pour un non-admin -> 403', async () => {
     const admin = await createUser({ role: 'admin' });
     const user = await createUser({ suffix: 'u2' });
     const { exemplaireId } = await setupLivreEtExemplaire(admin);
@@ -89,29 +175,6 @@ describe('PATCH /api/emprunts/:id/retourner', () => {
     const res = await request(app)
       .patch(`/api/emprunts/${emprunt.body.id}/retourner`)
       .set('Authorization', user.authHeader);
-
-    expect(res.status).toBe(200);
-    expect(res.body.statut).toBe('RETOURNE');
-    expect(res.body.dateRetour).not.toBeNull();
-
-    const ex = await prisma.exemplaire.findUnique({ where: { id: exemplaireId } });
-    expect(ex.statut).toBe('DISPONIBLE');
-  });
-
-  it("refuse si l'emprunt appartient a un autre user -> 403", async () => {
-    const admin = await createUser({ role: 'admin' });
-    const userA = await createUser({ suffix: 'A' });
-    const userB = await createUser({ suffix: 'B' });
-    const { exemplaireId } = await setupLivreEtExemplaire(admin);
-
-    const emprunt = await request(app)
-      .post('/api/emprunts')
-      .set('Authorization', userA.authHeader)
-      .send({ exemplaireIds: [exemplaireId] });
-
-    const res = await request(app)
-      .patch(`/api/emprunts/${emprunt.body.id}/retourner`)
-      .set('Authorization', userB.authHeader);
 
     expect(res.status).toBe(403);
   });
@@ -128,11 +191,11 @@ describe('PATCH /api/emprunts/:id/retourner', () => {
 
     await request(app)
       .patch(`/api/emprunts/${emprunt.body.id}/retourner`)
-      .set('Authorization', user.authHeader);
+      .set('Authorization', admin.authHeader);
 
     const res = await request(app)
       .patch(`/api/emprunts/${emprunt.body.id}/retourner`)
-      .set('Authorization', user.authHeader);
+      .set('Authorization', admin.authHeader);
 
     expect(res.status).toBe(409);
   });
@@ -155,7 +218,7 @@ describe('PATCH /api/emprunts/:id/retourner', () => {
 
     await request(app)
       .patch(`/api/emprunts/${emprunt.body.id}/retourner`)
-      .set('Authorization', userA.authHeader);
+      .set('Authorization', admin.authHeader);
 
     const ex = await prisma.exemplaire.findUnique({ where: { id: exemplaireId } });
     expect(ex.statut).toBe('RESERVE');
