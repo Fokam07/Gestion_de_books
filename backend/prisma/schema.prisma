@@ -1,0 +1,121 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            Int           @id @default(autoincrement())
+  nom           String
+  email         String        @unique
+  password      String
+  role          String        @default("user")
+  createdAt     DateTime      @default(now())
+  emprunts      Emprunt[]
+  reservations  Reservation[]
+  refreshTokens RefreshToken[]
+}
+
+model RefreshToken {
+  id          Int      @id @default(autoincrement())
+  hashedToken String   @unique
+  userId      Int
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  revoked     Boolean  @default(false)
+  expiresAt   DateTime
+  createdAt   DateTime @default(now())
+}
+
+// Catalogue : un livre = une reference bibliographique
+model Livre {
+  id          Int          @id @default(autoincrement())
+  titre       String
+  auteur      String
+  isbn        String?      @unique
+  annee       Int?
+  imageUrl    String?
+  editeur     String?
+  collection  String?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  exemplaires Exemplaire[]
+}
+
+// Un exemplaire = un objet physique appartenant au catalogue
+// statut : DISPONIBLE | EMPRUNTE | RESERVE | MAINTENANCE
+model Exemplaire {
+  id           Int                  @id @default(autoincrement())
+  codeBarre    String               @unique
+  livreId      Int
+  livre        Livre                @relation(fields: [livreId], references: [id])
+  statut      ExemplaireStatus      @default(DISPONIBLE)
+  emprunts     EmpruntExemplaire[]
+  reservations Reservation[]
+  createdAt    DateTime             @default(now())
+}
+
+// Session d'emprunt : un utilisateur emprunte un ou plusieurs exemplaires
+// statut : EN_COURS | RETOURNE
+model Emprunt {
+  id          Int                 @id @default(autoincrement())
+  userId      Int
+  statut      EmpruntStatus       @default(EN_COURS)
+  dateEmprunt DateTime            @default(now())
+  dateRetour  DateTime?
+  createdAt   DateTime            @default(now())
+  user        User                @relation(fields: [userId], references: [id])
+  exemplaires EmpruntExemplaire[]
+}
+
+// Table de jointure : liste les exemplaires d'une session d'emprunt
+model EmpruntExemplaire {
+  id           Int        @id @default(autoincrement())
+  empruntId    Int
+  exemplaireId Int
+  emprunt      Emprunt    @relation(fields: [empruntId], references: [id], onDelete: Cascade)
+  exemplaire   Exemplaire @relation(fields: [exemplaireId], references: [id])
+
+  @@unique([empruntId, exemplaireId])
+}
+
+// Reservation : quand tous les exemplaires d'un livre sont empruntes
+// statut : ACTIVE | HONOREE | ANNULEE | EXPIREE
+model Reservation {
+  id              Int        @id @default(autoincrement())
+  userId          Int
+  exemplaireId    Int
+  statut          ReservationStatus @default(ACTIVE)
+  dateReservation DateTime   @default(now())
+  expirationDate  DateTime?
+  createdAt       DateTime   @default(now())
+  user            User       @relation(fields: [userId], references: [id])
+  exemplaire      Exemplaire @relation(fields: [exemplaireId], references: [id])
+}
+
+enum ReservationStatus {
+  ACTIVE
+  HONOREE
+  ANNULEE
+  EXPIREE
+}
+
+enum ExemplaireStatus {
+  DISPONIBLE
+  EMPRUNTE
+  RESERVE
+  MAINTENANCE
+}
+
+enum EmpruntStatus {
+  EN_COURS
+  RETOURNE
+  EN_RETARD
+}
+
+

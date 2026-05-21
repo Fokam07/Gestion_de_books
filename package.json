@@ -1,0 +1,21 @@
+{
+  "name": "api-bibliotheque",
+  "private": true,
+  "scripts": {
+    "dev:backend":  "npm run dev  --prefix backend",
+    "dev:frontend": "npm run dev  --prefix frontend",
+    "dev":          "npm run dev:backend & npm run dev:frontend",
+
+    "test":         "npm test     --prefix backend",
+
+    "seed":         "npm run seed --prefix backend",
+
+    "build:backend":  "npm run build --prefix backend",
+    "build:frontend": "npm run build --prefix frontend",
+    "build":          "npm run build:backend && npm run build:frontend",
+
+    "docker:build": "docker build -t bibliotheque-api ./backend",
+    "docker:up":    "docker compose -f backend/docker-compose.yml up -d",
+    "docker:down":  "docker compose -f backend/docker-compose.yml down"
+  }
+}
