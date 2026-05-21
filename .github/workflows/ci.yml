@@ -52,13 +52,15 @@ jobs:
       # 6. Tests d'intégration Jest + Supertest
       #    Le globalSetup.cjs crée test.db via `prisma db push`
       #    JWT_SECRET et REFRESH_SECRET viennent des secrets GitHub du dépôt
+      # Les secrets de test n'ont pas besoin d'être confidentiels :
+      # ils doivent juste être identiques au moment du sign ET du verify.
       - name: Tests (Jest + Supertest)
         run: npm test
         env:
           NODE_ENV: test
           DATABASE_URL: file:./test.db
-          JWT_SECRET: ${{ secrets.JWT_SECRET }}
-          REFRESH_SECRET: ${{ secrets.REFRESH_SECRET }}
+          JWT_SECRET: ci_test_jwt_secret_must_be_32_chars_min
+          REFRESH_SECRET: ci_test_refresh_secret_32_chars_min!!
 
       # 7. Build de production (prisma generate + prisma migrate deploy)
       - name: Build
