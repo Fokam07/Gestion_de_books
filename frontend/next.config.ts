@@ -7,6 +7,10 @@ const isCapacitorBuild =
 const nextConfig: NextConfig = {
   output: isCapacitorBuild ? "export" : undefined,
   trailingSlash: isCapacitorBuild,
+  // Désactiver les features expérimentales incompatibles avec le WebView Android
+  experimental: isCapacitorBuild ? {
+    webpackBuildWorker: false,
+  } : {},
   images: {
     unoptimized: isCapacitorBuild,
     qualities: [75, 85],
