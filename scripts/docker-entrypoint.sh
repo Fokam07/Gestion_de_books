@@ -1,0 +1,73 @@
+#!/bin/bash
+
+set -e
+set -o pipefail
+
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+NC='\033[0m'
+
+log_step() { echo -e "\n${BLUE}▶ $1${NC}"; }
+log_ok() { echo -e "${GREEN}✓ $1${NC}"; }
+log_warn() { echo -e "${YELLOW}⚠ $1${NC}"; }
+log_err() { echo -e "${RED}✗ $1${NC}"; exit 1; }
+
+APP_NAME_VALUE="${APP_NAME:-Shelfio}"
+APP_ID_VALUE="${APP_ID:-com.shelfio.app}"
+API_URL_VALUE="${NEXT_PUBLIC_API_URL:-https://gestion-de-books.onrender.com}"
+
+log_step "Installation des dépendances Node.js..."
+cd /workspace/frontend
+npm ci --prefer-offline 2>/dev/null || npm install
+log_ok "Dépendances installées"
+
+log_step "Build Next.js en mode export statique..."
+BUILD_TARGET=capacitor NEXT_PUBLIC_API_URL="$API_URL_VALUE" npm run build:mobile
+log_ok "Build Next.js terminé — dossier out/ généré"
+
+if [ ! -d "out" ]; then
+  log_err "Le dossier out/ n'existe pas. Vérifiez la configuration Next.js pour Capacitor."
+fi
+
+log_step "Vérification de la plateforme Android..."
+if [ ! -d "android" ]; then
+  npx cap add android
+  log_ok "Plateforme Android ajoutée"
+else
+  log_warn "Le dossier android/ existe déjà, réutilisation de la plateforme."
+fi
+
+log_step "Synchronisation des assets web vers Android..."
+APP_NAME="$APP_NAME_VALUE" APP_ID="$APP_ID_VALUE" NEXT_PUBLIC_API_URL="$API_URL_VALUE" npx cap sync android
+log_ok "Synchronisation terminée"
+
+log_step "Compilation de l'APK Android..."
+cd /workspace/frontend/android
+chmod +x gradlew
+./gradlew assembleDebug \
+  --no-daemon \
+  --stacktrace \
+  -Dorg.gradle.jvmargs="-Xmx2g"
+log_ok "Compilation terminée"
+
+log_step "Déplacement de l'APK..."
+APK_SOURCE="/workspace/frontend/android/app/build/outputs/apk/debug/app-debug.apk"
+APK_DEST="/workspace/generated/builds/apk"
+SOURCE_DEST="/workspace/generated/source"
+
+mkdir -p "$APK_DEST"
+mkdir -p "$SOURCE_DEST"
+
+cp "$APK_SOURCE" "$APK_DEST/app-debug.apk"
+rm -rf "$SOURCE_DEST/android"
+cp -r /workspace/frontend/android "$SOURCE_DEST/android"
+log_ok "APK disponible dans : generated/builds/apk/app-debug.apk"
+
+APK_SIZE=$(du -sh "$APK_DEST/app-debug.apk" | cut -f1)
+echo ""
+echo -e "${GREEN}BUILD ANDROID TERMINE AVEC SUCCES${NC}"
+echo -e " APK : generated/builds/apk/app-debug.apk"
+echo -e " Taille : $APK_SIZE"
+echo -e " Source : generated/source/android/"
