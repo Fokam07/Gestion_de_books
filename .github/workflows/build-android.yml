@@ -216,7 +216,7 @@ jobs:
       #
       - name: Installation des dépendances npm
         working-directory: frontend
-        run: npm ci
+        run: npm install
 
       #
       # 4. Build Next.js export statique
