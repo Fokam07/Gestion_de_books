@@ -64,7 +64,7 @@ export default function HeroCarousel({
   }, []);
 
   return (
-    <div className="relative w-full min-h-[42rem] sm:h-170 overflow-hidden bg-slate-900 pt-24 sm:pt-20">
+    <div className="relative w-full min-h-[42rem] sm:h-170 overflow-hidden bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 pt-24 sm:pt-20">
       {/* Slides Container */}
       <div className="absolute inset-0 w-full h-full">
         {bookBackgrounds.map((bg, index) => (
@@ -82,6 +82,7 @@ export default function HeroCarousel({
               unoptimized
               className="object-cover object-center"
               priority={index === 0}
+              onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
             />
             <div className="absolute inset-0 bg-linear-to-b from-slate-950/70 via-slate-900/60 to-slate-950/40" />
           </div>
