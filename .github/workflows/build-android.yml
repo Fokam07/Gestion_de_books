@@ -186,3 +186,141 @@ jobs:
           echo "- \`capacitor.config.ts\` absent ou \`webDir\` incorrect" >> $GITHUB_STEP_SUMMARY
           echo "- Erreur de compilation dans le code Next.js" >> $GITHUB_STEP_SUMMARY
           echo "- Android SDK non trouvé" >> $GITHUB_STEP_SUMMARY
+
+  # ─────────────────────────────────────────────────────────────
+  #  JOB iOS — macOS + Xcode (tourne en parallèle avec Android)
+  # ─────────────────────────────────────────────────────────────
+  build-ios:
+    name: Build iOS (Xcode / Simulateur)
+    runs-on: macos-latest
+
+    steps:
+      #
+      # 1. Checkout
+      #
+      - name: Checkout du code
+        uses: actions/checkout@v4
+
+      #
+      # 2. Node.js 20
+      #
+      - name: Configuration Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      #
+      # 3. Dépendances npm
+      #
+      - name: Installation des dépendances npm
+        working-directory: frontend
+        run: npm ci
+
+      #
+      # 4. Build Next.js export statique
+      #
+      - name: Build Next.js (export statique)
+        working-directory: frontend
+        run: |
+          export BUILD_TARGET=capacitor
+          export NEXT_BUILD_TARGET=capacitor
+          export NEXT_PUBLIC_API_URL="${{ vars.NEXT_PUBLIC_API_URL || 'https://gestion-de-books.onrender.com' }}"
+          npm run build
+
+      #
+      # 5. Capacitor — add ios + sync
+      #
+      - name: Initialisation Capacitor iOS
+        working-directory: frontend
+        env:
+          APP_NAME: ${{ vars.APP_NAME || 'Shelfio' }}
+          APP_ID: ${{ vars.APP_ID || 'com.shelfio.app' }}
+        run: |
+          if [ ! -d "ios" ]; then
+            ./node_modules/.bin/cap add ios
+          fi
+          ./node_modules/.bin/cap sync ios
+
+      #
+      # 6. CocoaPods (requis par Capacitor iOS)
+      #
+      - name: Installation CocoaPods
+        working-directory: frontend/ios/App
+        run: pod install --repo-update
+
+      #
+      # 7. Cache CocoaPods pour les prochains builds
+      #
+      - name: Cache CocoaPods
+        uses: actions/cache@v4
+        with:
+          path: frontend/ios/App/Pods
+          key: pods-${{ runner.os }}-${{ hashFiles('frontend/ios/App/Podfile.lock') }}
+          restore-keys: pods-${{ runner.os }}-
+
+      #
+      # 8. Build pour simulateur iOS (sans signature)
+      #
+      - name: Build iOS Simulateur (sans signature)
+        working-directory: frontend/ios/App
+        run: |
+          xcodebuild \
+            -workspace App.xcworkspace \
+            -scheme App \
+            -sdk iphonesimulator \
+            -configuration Debug \
+            -derivedDataPath $RUNNER_TEMP/ios-build \
+            CODE_SIGNING_ALLOWED=NO \
+            VALID_ARCHS=x86_64 \
+            build | xcpretty || true
+
+      #
+      # 9. Zipper le projet iOS source (pour l'ouvrir dans Xcode)
+      #
+      - name: Préparer artefact source iOS
+        run: |
+          cd frontend
+          zip -r $RUNNER_TEMP/ios-source.zip ios/ --exclude "ios/App/Pods/*"
+
+      #
+      # 10. Upload .app simulateur
+      #
+      - name: Upload .app (simulateur)
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-simulator-${{ github.sha }}
+          path: ${{ runner.temp }}/ios-build/Build/Products/Debug-iphonesimulator/App.app
+          retention-days: 30
+
+      #
+      # 11. Upload projet source iOS (à ouvrir dans Xcode)
+      #
+      - name: Upload projet source iOS (Xcode)
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-source-xcode-${{ github.sha }}
+          path: ${{ runner.temp }}/ios-source.zip
+          retention-days: 30
+
+      #
+      # 12. Résumé
+      #
+      - name: Résumé du build iOS
+        if: success()
+        run: |
+          echo "## ✅ Build iOS réussi" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Artefact | Usage |" >> $GITHUB_STEP_SUMMARY
+          echo "|---|---|" >> $GITHUB_STEP_SUMMARY
+          echo "| \`ios-simulator-*\` | Glisser le .app dans un simulateur iOS |" >> $GITHUB_STEP_SUMMARY
+          echo "| \`ios-source-xcode-*\` | Dézipper → ouvrir \`App.xcworkspace\` dans Xcode |" >> $GITHUB_STEP_SUMMARY
+          echo "| Commit | ${{ github.sha }} |" >> $GITHUB_STEP_SUMMARY
+
+      - name: Notification d'échec iOS
+        if: failure()
+        run: |
+          echo "## ❌ Build iOS échoué" >> $GITHUB_STEP_SUMMARY
+          echo "Causes fréquentes : CocoaPods introuvable, Xcode version incompatible, capacitor.config.ts mal configuré" >> $GITHUB_STEP_SUMMARY
+
