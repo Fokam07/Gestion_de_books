@@ -1,0 +1,179 @@
+#
+# .github/workflows/build-android.yml
+#
+# Pipeline de build Android déclenché par git push
+#
+
+name: Build Android APK
+
+#
+# Déclencheurs
+#
+on:
+  push:
+    branches:
+      - main
+      - develop
+  pull_request:
+    branches:
+      - main
+  # Permet de lancer le workflow manuellement depuis l'interface GitHub
+  workflow_dispatch:
+
+#
+# Jobs
+#
+jobs:
+  build-android:
+    name: Build APK Android
+    runs-on: ubuntu-latest
+
+    steps:
+      #
+      # 1. Récupérer le code source
+      #
+      - name: Checkout du code
+        uses: actions/checkout@v4
+
+      #
+      # 2. Configurer Node.js 20
+      #
+      - name: Configuration Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      #
+      # 3. Configurer Java 17 (requis par Gradle)
+      #
+      - name: Configuration Java 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      #
+      # 4. Installer les composants Android SDK manquants
+      #    (ubuntu-latest a déjà ANDROID_SDK_ROOT et sdkmanager)
+      #
+      - name: Configuration Android SDK
+        run: |
+          yes | sdkmanager --licenses > /dev/null 2>&1
+          sdkmanager "platforms;android-34" "build-tools;34.0.0" "platform-tools"
+
+      #
+      # 5. Cache Gradle (builds plus rapides)
+      #
+      - name: Cache Gradle
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-${{ runner.os }}-${{ hashFiles('frontend/android/**/gradle-wrapper.properties') }}
+          restore-keys: |
+            gradle-${{ runner.os }}-
+
+      #
+      # 6. Installer les dépendances Node.js
+      #
+      - name: Installation des dépendances npm
+        working-directory: frontend
+        run: npm ci
+
+      #
+      # 7. Build Next.js en mode export statique (Capacitor)
+      #
+      - name: Build Next.js (export statique)
+        working-directory: frontend
+        env:
+          BUILD_TARGET: capacitor
+          NEXT_PUBLIC_API_URL: ${{ vars.NEXT_PUBLIC_API_URL || 'https://gestion-de-books.onrender.com' }}
+        run: npm run build:mobile
+
+      #
+      # 8. Vérifier que le dossier out/ a bien été généré
+      #
+      - name: Vérification export statique
+        run: |
+          if [ ! -d "frontend/out" ]; then
+            echo "❌ Le dossier frontend/out/ est absent. Vérifiez next.config.ts (output: 'export' quand BUILD_TARGET=capacitor)"
+            exit 1
+          fi
+          echo "✅ frontend/out/ présent ($(ls frontend/out | wc -l) fichiers)"
+
+      #
+      # 9. Ajouter et synchroniser la plateforme Android
+      #
+      - name: Initialisation Capacitor Android
+        working-directory: frontend
+        env:
+          APP_NAME: ${{ vars.APP_NAME || 'Shelfio' }}
+          APP_ID: ${{ vars.APP_ID || 'com.shelfio.app' }}
+        run: |
+          if [ ! -d "android" ]; then
+            npx cap add android
+          fi
+          npx cap sync android
+
+      #
+      # 10. Rendre Gradle exécutable
+      #
+      - name: Permissions Gradle
+        working-directory: frontend/android
+        run: chmod +x gradlew
+
+      #
+      # 11. Compiler l'APK Debug
+      #
+      - name: Compilation APK Debug
+        working-directory: frontend/android
+        run: |
+          ./gradlew assembleDebug \
+            --no-daemon \
+            -Dorg.gradle.jvmargs="-Xmx3g"
+
+      #
+      # 12. Uploader l'APK comme artefact téléchargeable
+      #
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-debug-${{ github.sha }}
+          path: frontend/android/app/build/outputs/apk/debug/app-debug.apk
+          retention-days: 30
+
+      #
+      # 13. Résumé du build
+      #
+      - name: Résumé du build
+        if: success()
+        run: |
+          APK_PATH="frontend/android/app/build/outputs/apk/debug/app-debug.apk"
+          APK_SIZE=$(du -sh "$APK_PATH" | cut -f1)
+          echo "## ✅ Build Android réussi" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Information | Valeur |" >> $GITHUB_STEP_SUMMARY
+          echo "|---|---|" >> $GITHUB_STEP_SUMMARY
+          echo "| Fichier | app-debug.apk |" >> $GITHUB_STEP_SUMMARY
+          echo "| Taille | $APK_SIZE |" >> $GITHUB_STEP_SUMMARY
+          echo "| Commit | ${{ github.sha }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Branche | ${{ github.ref_name }} |" >> $GITHUB_STEP_SUMMARY
+
+      #
+      # 14. Notification d'échec
+      #
+      - name: Notification d'échec
+        if: failure()
+        run: |
+          echo "## ❌ Build Android échoué" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Consultez les logs ci-dessus pour identifier l'erreur." >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Causes fréquentes :**" >> $GITHUB_STEP_SUMMARY
+          echo "- \`next.config.ts\` : \`output: 'export'\` non actif quand \`BUILD_TARGET=capacitor\`" >> $GITHUB_STEP_SUMMARY
+          echo "- \`capacitor.config.ts\` absent ou \`webDir\` incorrect" >> $GITHUB_STEP_SUMMARY
+          echo "- Erreur de compilation dans le code Next.js" >> $GITHUB_STEP_SUMMARY
+          echo "- Android SDK non trouvé" >> $GITHUB_STEP_SUMMARY
