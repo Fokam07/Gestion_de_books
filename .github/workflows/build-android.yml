@@ -14,6 +14,7 @@ on:
     branches:
       - main
       - develop
+      - prince
   pull_request:
     branches:
       - main
