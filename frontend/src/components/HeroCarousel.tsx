@@ -1,24 +1,23 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import Image from 'next/image';
 import { FaSearch } from 'react-icons/fa';
 
 const bookBackgrounds = [
   {
     id: 1,
-    src: 'https://images.unsplash.com/photo-1568667256549-094345857637?auto=format&fit=crop',
-    alt: 'Grande bibliothèque classique en bois',
+    gradient: 'from-slate-900 via-indigo-950 to-slate-900',
+    overlay: 'from-indigo-950/80 via-slate-900/70 to-slate-950/60',
   },
   {
     id: 2,
-    src: 'https://images.unsplash.com/photo-1521587760476-6c12a4b040da?auto=format&fit=crop',
-    alt: "Espace d'étude universitaire",
+    gradient: 'from-slate-900 via-red-950 to-slate-900',
+    overlay: 'from-red-950/80 via-slate-900/70 to-slate-950/60',
   },
   {
     id: 3,
-    src: 'https://images.unsplash.com/photo-1524995997946-a1c2e315a42f?auto=format&fit=crop',
-    alt: "Collection d'ouvrages académiques",
+    gradient: 'from-slate-900 via-slate-800 to-indigo-950',
+    overlay: 'from-slate-950/80 via-slate-800/70 to-indigo-950/60',
   },
 ];
 
@@ -65,26 +64,16 @@ export default function HeroCarousel({
 
   return (
     <div className="relative w-full min-h-[42rem] sm:h-170 overflow-hidden bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 pt-24 sm:pt-20">
-      {/* Slides Container */}
+      {/* Slides Container — dégradés CSS locaux (pas d'images externes) */}
       <div className="absolute inset-0 w-full h-full">
         {bookBackgrounds.map((bg, index) => (
           <div
             key={bg.id}
-            className={`absolute inset-0 transition-opacity duration-1000 ease-in-out ${
+            className={`absolute inset-0 transition-opacity duration-1000 ease-in-out bg-gradient-to-br ${bg.gradient} ${
               index === currentSlide ? 'opacity-100' : 'opacity-0'
             }`}
           >
-            <Image
-              src={bg.src}
-              alt={bg.alt}
-              fill
-              sizes="100vw"
-              unoptimized
-              className="object-cover object-center"
-              priority={index === 0}
-              onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
-            />
-            <div className="absolute inset-0 bg-linear-to-b from-slate-950/70 via-slate-900/60 to-slate-950/40" />
+            <div className={`absolute inset-0 bg-gradient-to-b ${bg.overlay}`} />
           </div>
         ))}
       </div>
