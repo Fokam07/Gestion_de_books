@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
 
-export default function HeroBanner({ totalLivres }: { totalLivres: number }) {
+export default function HeroBanner({ totalLivres = 10 }: { totalLivres?: number }) {
   const { user } = useAuth();
 
   return (
