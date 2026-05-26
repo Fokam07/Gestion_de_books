@@ -6,6 +6,9 @@
 
 name: Build Android APK
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 #
 # Déclencheurs
 #
@@ -57,12 +60,15 @@ jobs:
 
       #
       # 4. Installer les composants Android SDK manquants
-      #    (ubuntu-latest a déjà ANDROID_SDK_ROOT et sdkmanager)
+      #    (ubuntu-latest a déjà ANDROID_SDK_ROOT, sdkmanager n'est pas dans PATH)
       #
       - name: Configuration Android SDK
         run: |
-          yes | sdkmanager --licenses > /dev/null 2>&1
-          sdkmanager "platforms;android-34" "build-tools;34.0.0" "platform-tools"
+          SDKMANAGER="$ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager"
+          yes | "$SDKMANAGER" --licenses > /dev/null 2>&1
+          "$SDKMANAGER" "platforms;android-34" "build-tools;34.0.0" "platform-tools"
+          echo "$ANDROID_SDK_ROOT/cmdline-tools/latest/bin" >> $GITHUB_PATH
+          echo "$ANDROID_SDK_ROOT/platform-tools" >> $GITHUB_PATH
 
       #
       # 5. Cache Gradle (builds plus rapides)
