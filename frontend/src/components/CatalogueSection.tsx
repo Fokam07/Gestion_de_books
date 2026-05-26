@@ -1,12 +1,21 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import BookCard from '@/components/BookCard';
-import { Livre, CATEGORIES } from '@/lib/api';
+import { Livre, CATEGORIES, getLivres } from '@/lib/api';
 
-export default function CatalogueSection({ livres }: { livres: Livre[] }) {
+export default function CatalogueSection() {
+  const [livres, setLivres] = useState<Livre[]>([]);
+  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [categorie, setCategorie] = useState('');
+
+  useEffect(() => {
+    getLivres()
+      .then(setLivres)
+      .catch(() => setLivres([]))
+      .finally(() => setLoading(false));
+  }, []);
 
   const filtered = useMemo(() => {
     const q = search.toLowerCase().trim();
@@ -28,7 +37,9 @@ export default function CatalogueSection({ livres }: { livres: Livre[] }) {
       <div className="flex items-end justify-between mb-6">
         <div>
           <h2 className="text-2xl md:text-3xl font-bold text-gray-900">Notre catalogue</h2>
-          <p className="text-gray-500 mt-1">{livres.length} titres disponibles</p>
+          <p className="text-gray-500 mt-1">
+            {loading ? 'Chargement…' : `${livres.length} titres disponibles`}
+          </p>
         </div>
       </div>
 
@@ -66,8 +77,18 @@ export default function CatalogueSection({ livres }: { livres: Livre[] }) {
         )}
       </div>
 
-      {/* Résultat */}
-      {filtered.length === 0 ? (
+      {/* Squelette de chargement */}
+      {loading ? (
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-5">
+          {Array.from({ length: 10 }).map((_, i) => (
+            <div key={i} className="animate-pulse">
+              <div className="bg-gray-200 rounded-xl aspect-[2/3] mb-3" />
+              <div className="bg-gray-200 h-4 rounded mb-2" />
+              <div className="bg-gray-200 h-3 rounded w-2/3" />
+            </div>
+          ))}
+        </div>
+      ) : filtered.length === 0 ? (
         <div className="text-center py-24 text-gray-400">
           <p className="text-4xl mb-4">🔍</p>
           <p className="font-medium">Aucun livre ne correspond à votre recherche.</p>
