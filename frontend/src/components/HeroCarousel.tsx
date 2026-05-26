@@ -64,7 +64,7 @@ export default function HeroCarousel({
   }, []);
 
   return (
-    <div className="relative w-full min-h-[42rem] sm:h-170 overflow-hidden bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 pt-24 sm:pt-20">
+    <div className="relative w-full min-h-[42rem] sm:h-170 overflow-hidden bg-linear-to-br from-slate-900 via-slate-800 to-slate-900 pt-24 sm:pt-20">
       {/* Slides Container */}
       <div className="absolute inset-0 w-full h-full">
         {bookBackgrounds.map((bg, index) => (
