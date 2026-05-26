@@ -95,10 +95,12 @@ jobs:
       #
       - name: Build Next.js (export statique)
         working-directory: frontend
-        env:
-          BUILD_TARGET: capacitor
-          NEXT_PUBLIC_API_URL: ${{ vars.NEXT_PUBLIC_API_URL || 'https://gestion-de-books.onrender.com' }}
-        run: npm run build
+        run: |
+          export BUILD_TARGET=capacitor
+          export NEXT_BUILD_TARGET=capacitor
+          export NEXT_PUBLIC_API_URL="${{ vars.NEXT_PUBLIC_API_URL || 'https://gestion-de-books.onrender.com' }}"
+          echo "▶ BUILD_TARGET=$BUILD_TARGET"
+          npm run build
 
       #
       # 8. Vérifier que le dossier out/ a bien été généré

@@ -1,7 +1,14 @@
 import type { NextConfig } from "next";
 
+const isCapacitorBuild =
+  process.env.BUILD_TARGET === "capacitor" ||
+  process.env.NEXT_BUILD_TARGET === "capacitor";
+
 const nextConfig: NextConfig = {
+  output: isCapacitorBuild ? "export" : undefined,
+  trailingSlash: isCapacitorBuild,
   images: {
+    unoptimized: isCapacitorBuild,
     qualities: [75, 85],
     remotePatterns: [
       {
