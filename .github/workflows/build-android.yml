@@ -123,9 +123,9 @@ jobs:
           APP_ID: ${{ vars.APP_ID || 'com.shelfio.app' }}
         run: |
           if [ ! -d "android" ]; then
-            npx cap add android
+            ./node_modules/.bin/cap add android
           fi
-          npx cap sync android
+          ./node_modules/.bin/cap sync android
 
       #
       # 10. Rendre Gradle exécutable
