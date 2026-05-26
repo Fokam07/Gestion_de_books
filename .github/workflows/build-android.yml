@@ -98,7 +98,7 @@ jobs:
         env:
           BUILD_TARGET: capacitor
           NEXT_PUBLIC_API_URL: ${{ vars.NEXT_PUBLIC_API_URL || 'https://gestion-de-books.onrender.com' }}
-        run: npm run build:mobile
+        run: npm run build
 
       #
       # 8. Vérifier que le dossier out/ a bien été généré
