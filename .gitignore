@@ -14,6 +14,15 @@ node_modules/
 # Next.js
 frontend/.next/
 frontend/out/
+generated/
+frontend/android/
+
+# Android / Capacitor
+*.iml
+.gradle/
+local.properties
+.idea/
+*.keystore
 
 # Logs
 npm-debug.log*
@@ -23,5 +32,4 @@ yarn-error.log*
 # OS
 .DS_Store
 
-frontend/
 .claude/

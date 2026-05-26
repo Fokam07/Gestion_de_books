@@ -204,14 +204,14 @@ export default function AdminDashboard() {
         <section className="py-10 px-4 sm:px-6 lg:px-8">
           <div className="max-w-7xl mx-auto">
             {error && (
-              <div className="mb-6 bg-red-50 border border-red-200 text-red-800 px-6 py-4 rounded-xl flex items-center justify-between">
+              <div className="mb-6 bg-red-50 border border-red-200 text-red-800 px-6 py-4 rounded-xl flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:justify-between">
                 <p className="font-semibold text-sm">{error}</p>
                 <button onClick={() => setError(null)} className="text-red-500 cursor-pointer ml-4"><FaTimes /></button>
               </div>
             )}
 
             {/* Stats */}
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
               <div className="p-6 bg-white rounded-xl border border-slate-100 shadow-sm">
                 <p className="text-slate-500 text-xs font-bold uppercase tracking-wider">Total Livres</p>
                 <p className="text-4xl font-black mt-2 text-[#C41C3B]">{livres.length}</p>
@@ -235,24 +235,26 @@ export default function AdminDashboard() {
             </div>
 
             {/* Tabs Restructurés */}
-            <div className="flex gap-4 mb-8 border-b border-slate-200 flex-wrap">
-              {[
-                { id: 'dashboard', label: 'Aperçu', icon: FaClipboard, activeColor: 'border-[#C41C3B] text-[#C41C3B]' },
-                { id: 'books', label: 'Livres', icon: FaBook, activeColor: 'border-blue-600 text-blue-600' },
-                { id: 'emprunts_attente', label: '1. Valider Remises', icon: FaHourglassHalf, activeColor: 'border-amber-500 text-amber-500' },
-                { id: 'emprunts_cours', label: '2. En Cours / Retours', icon: FaBookReader, activeColor: 'border-emerald-500 text-emerald-500' },
-                { id: 'reservations', label: 'Réservations', icon: FaBoxOpen, activeColor: 'border-orange-500 text-orange-500' },
-              ].map((tab) => (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
-                  className={`pb-4 font-semibold text-sm flex items-center gap-2 border-b-2 transition-all cursor-pointer ${
-                    activeTab === tab.id ? tab.activeColor : 'border-transparent text-slate-500 hover:text-slate-800'
-                  }`}
-                >
-                  <tab.icon /> {tab.label}
-                </button>
-              ))}
+            <div className="mb-8 border-b border-slate-200 overflow-x-auto">
+              <div className="flex gap-4 min-w-max">
+                {[
+                  { id: 'dashboard', label: 'Aperçu', icon: FaClipboard, activeColor: 'border-[#C41C3B] text-[#C41C3B]' },
+                  { id: 'books', label: 'Livres', icon: FaBook, activeColor: 'border-blue-600 text-blue-600' },
+                  { id: 'emprunts_attente', label: '1. Valider Remises', icon: FaHourglassHalf, activeColor: 'border-amber-500 text-amber-500' },
+                  { id: 'emprunts_cours', label: '2. En Cours / Retours', icon: FaBookReader, activeColor: 'border-emerald-500 text-emerald-500' },
+                  { id: 'reservations', label: 'Réservations', icon: FaBoxOpen, activeColor: 'border-orange-500 text-orange-500' },
+                ].map((tab) => (
+                  <button
+                    key={tab.id}
+                    onClick={() => setActiveTab(tab.id)}
+                    className={`pb-4 font-semibold text-sm whitespace-nowrap flex items-center gap-2 border-b-2 transition-all cursor-pointer ${
+                      activeTab === tab.id ? tab.activeColor : 'border-transparent text-slate-500 hover:text-slate-800'
+                    }`}
+                  >
+                    <tab.icon /> {tab.label}
+                  </button>
+                ))}
+              </div>
             </div>
 
             {isLoadingData && (
@@ -290,7 +292,7 @@ export default function AdminDashboard() {
                 {/* LIVRES */}
                 {activeTab === 'books' && (
                   <div>
-                    <div className="mb-6 flex gap-4">
+                    <div className="mb-6 flex flex-col sm:flex-row gap-4">
                       <div className="flex-1 relative">
                         <FaSearch className="absolute left-4 top-4 text-slate-400" />
                         <input
@@ -301,7 +303,7 @@ export default function AdminDashboard() {
                           className="w-full pl-12 pr-4 py-3 border border-slate-200 rounded-xl focus:border-[#C41C3B] outline-none text-sm bg-white text-slate-800"
                         />
                       </div>
-                      <button onClick={() => setShowAddModal(true)} className="px-6 py-3 rounded-xl bg-[#C41C3B] hover:bg-[#a81430] text-white font-semibold flex items-center gap-2 shadow-sm text-sm">
+                      <button onClick={() => setShowAddModal(true)} className="px-6 py-3 rounded-xl bg-[#C41C3B] hover:bg-[#a81430] text-white font-semibold flex items-center justify-center gap-2 shadow-sm text-sm">
                         <FaPlus /> Ajouter
                       </button>
                     </div>
@@ -479,7 +481,7 @@ export default function AdminDashboard() {
                   {categories.map((cat) => <option key={cat.value} value={cat.value}>{cat.label}</option>)}
                 </select>
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">ISBN</label>
                   <input value={newBook.isbn ?? ''} onChange={e => setNewBook({ ...newBook, isbn: e.target.value })} className="w-full px-4 py-2.5 border border-slate-200 rounded-lg text-sm bg-white text-slate-800" />
@@ -489,7 +491,7 @@ export default function AdminDashboard() {
                   <input type="number" value={newBook.annee ?? ''} onChange={e => setNewBook({ ...newBook, annee: e.target.value ? parseInt(e.target.value) : undefined })} className="w-full px-4 py-2.5 border border-slate-200 rounded-lg text-sm bg-white text-slate-800" />
                 </div>
               </div>
-              <div className="flex gap-3 pt-2">
+              <div className="flex flex-col sm:flex-row gap-3 pt-2">
                 <button type="button" onClick={() => setShowAddModal(false)} className="flex-1 py-3 border border-slate-200 rounded-xl font-semibold text-slate-600 hover:bg-slate-50">Annuler</button>
                 <button type="submit" disabled={addLoading} className="flex-1 py-3 bg-[#C41C3B] text-white rounded-xl font-bold disabled:opacity-60 flex items-center justify-center gap-2">
                   {addLoading ? <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <FaPlus />}
@@ -517,7 +519,7 @@ export default function AdminDashboard() {
                 <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">Code Barre *</label>
                 <input required value={addExemplaireCodeBarre} onChange={e => setAddExemplaireCodeBarre(e.target.value)} placeholder="ex: EX-001" className="w-full px-4 py-2.5 border border-slate-200 rounded-lg text-sm bg-white text-slate-800" />
               </div>
-              <div className="flex gap-3 pt-2">
+              <div className="flex flex-col sm:flex-row gap-3 pt-2">
                 <button type="button" onClick={() => setAddExemplaireModal(null)} className="flex-1 py-3 border border-slate-200 rounded-xl font-semibold text-slate-600 hover:bg-slate-50">Annuler</button>
                 <button type="submit" disabled={addExemplaireLoading} className="flex-1 py-3 bg-blue-600 text-white rounded-xl font-bold flex items-center justify-center gap-2">
                   {addExemplaireLoading ? <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <FaPlus />}

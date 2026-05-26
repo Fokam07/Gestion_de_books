@@ -64,7 +64,7 @@ export default function HeroCarousel({
   }, []);
 
   return (
-    <div className="relative w-full h-[680px] overflow-hidden bg-slate-900 pt-20">
+    <div className="relative w-full min-h-[42rem] sm:h-170 overflow-hidden bg-slate-900 pt-24 sm:pt-20">
       {/* Slides Container */}
       <div className="absolute inset-0 w-full h-full">
         {bookBackgrounds.map((bg, index) => (
@@ -79,25 +79,26 @@ export default function HeroCarousel({
               alt={bg.alt}
               fill
               sizes="100vw"
+              unoptimized
               className="object-cover object-center"
               priority={index === 0}
             />
-            <div className="absolute inset-0 bg-gradient-to-b from-slate-950/70 via-slate-900/60 to-slate-950/40" />
+            <div className="absolute inset-0 bg-linear-to-b from-slate-950/70 via-slate-900/60 to-slate-950/40" />
           </div>
         ))}
       </div>
 
       {/* Content Card */}
-      <div className="relative inset-0 flex flex-col items-center justify-center z-10 px-6 h-full w-full">
-        <h1 className="text-4xl md:text-6xl font-bold mb-4 leading-tight text-white drop-shadow-md text-center max-w-4xl font-serif tracking-tight">
+      <div className="relative inset-0 flex flex-col items-center justify-center z-10 px-4 sm:px-6 h-full w-full">
+        <h1 className="text-3xl sm:text-4xl md:text-6xl font-bold mb-4 leading-tight text-white drop-shadow-md text-center max-w-4xl font-serif tracking-tight">
           Gestion Moderne de <span className="text-[#FFC107]">Bibliothèque</span>
         </h1>
-        <p className="text-lg md:text-xl mb-10 text-slate-200 drop-shadow-sm text-center max-w-2xl font-light tracking-wide">
+        <p className="text-base sm:text-lg md:text-xl mb-8 sm:mb-10 text-slate-200 drop-shadow-sm text-center max-w-2xl font-light tracking-wide">
           Plateforme centrale pour la recherche, la réservation et le suivi de vos ouvrages préférés.
         </p>
 
         {/* Search & Filter Card */}
-        <div className="w-full max-w-4xl bg-white/95 backdrop-blur-md rounded-xl shadow-2xl p-6 md:p-8 border border-white/20 transform hover:scale-[1.01] transition-all duration-500">
+        <div className="w-full max-w-4xl bg-white/95 backdrop-blur-md rounded-xl shadow-2xl p-4 sm:p-6 md:p-8 border border-white/20 transform hover:scale-[1.01] transition-all duration-500">
           {/* Barre de recherche principale */}
           <div className="mb-6">
             <div className="relative">
@@ -107,7 +108,7 @@ export default function HeroCarousel({
                 placeholder="Rechercher par titre, auteur, code ISBN..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)} // 👈 Dynamique
-                className="w-full pl-14 pr-6 py-4 border border-slate-200 rounded-lg focus:outline-none focus:border-[#C41C3B] focus:ring-1 focus:ring-[#C41C3B] transition-all text-slate-900 text-base bg-slate-50/50"
+                className="w-full pl-12 sm:pl-14 pr-4 sm:pr-6 py-3.5 sm:py-4 border border-slate-200 rounded-lg focus:outline-none focus:border-[#C41C3B] focus:ring-1 focus:ring-[#C41C3B] transition-all text-slate-900 text-sm sm:text-base bg-slate-50/50"
               />
             </div>
           </div>
@@ -153,7 +154,7 @@ export default function HeroCarousel({
           {/* Bouton d'ancrage visuel vers le bas */}
           <button
             onClick={() => window.scrollTo({ top: 600, behavior: 'smooth' })}
-            className="w-full mt-6 py-4 rounded-lg text-white font-bold text-base transition-all duration-300 bg-[#C41C3B] hover:bg-[#a3132e] hover:shadow-lg flex items-center justify-center gap-2"
+            className="w-full mt-6 py-3.5 sm:py-4 rounded-lg text-white font-bold text-sm sm:text-base transition-all duration-300 bg-[#C41C3B] hover:bg-[#a3132e] hover:shadow-lg flex items-center justify-center gap-2"
           >
             <FaSearch className="text-sm" /> Voir les résultats filtrés
           </button>

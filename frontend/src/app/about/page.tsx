@@ -9,12 +9,12 @@ export default function AboutPage() {
 
       <main className="pt-24">
         {/* Hero Section */}
-        <section className="py-20 px-4 sm:px-6 lg:px-8" style={{ backgroundColor: '#F5F5F5' }}>
+        <section className="py-14 sm:py-20 px-4 sm:px-6 lg:px-8" style={{ backgroundColor: '#F5F5F5' }}>
           <div className="max-w-6xl mx-auto text-center">
-            <h1 className="text-5xl font-bold mb-6" style={{ color: '#1A1A1A' }}>
+            <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-4 sm:mb-6" style={{ color: '#1A1A1A' }}>
               À Propos de <span style={{ color: '#C41C3B' }}>Shelfio</span>
             </h1>
-            <p className="text-xl max-w-2xl mx-auto" style={{ color: '#404040' }}>
+            <p className="text-base sm:text-lg md:text-xl max-w-2xl mx-auto" style={{ color: '#404040' }}>
               Shelfio est une plateforme moderne de gestion de bibliothèque conçue pour simplifier la réservation, l'emprunt et la gestion des livres dans les institutions éducatives.
             </p>
           </div>
@@ -69,7 +69,7 @@ export default function AboutPage() {
         {/* Features Section */}
         <section className="py-20 px-4 sm:px-6 lg:px-8" style={{ backgroundColor: '#F5F5F5' }}>
           <div className="max-w-6xl mx-auto">
-            <h2 className="text-4xl font-bold text-center mb-16" style={{ color: '#1A1A1A' }}>
+            <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-center mb-10 sm:mb-16" style={{ color: '#1A1A1A' }}>
               Pourquoi Choisir Shelfio ?
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -97,15 +97,15 @@ export default function AboutPage() {
         {/* CTA Section */}
         <section className="py-20 px-4 sm:px-6 lg:px-8" style={{ backgroundColor: '#C41C3B' }}>
           <div className="max-w-4xl mx-auto text-center">
-            <h2 className="text-4xl font-bold mb-6 text-white">
+            <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-6 text-white">
               Prêt à Transformer Votre Bibliothèque ?
             </h2>
-            <p className="text-xl mb-8 text-white">
+            <p className="text-base sm:text-lg md:text-xl mb-8 text-white">
               Rejoignez des centaines d'institutions qui utilisent Shelfio pour gérer efficacement leurs collections.
             </p>
             <Link
               href="/auth/register"
-              className="inline-flex items-center gap-2 px-8 py-4 rounded-lg text-white font-bold text-lg transition-all hover:opacity-90 bg-white"
+              className="inline-flex items-center gap-2 px-6 sm:px-8 py-3.5 sm:py-4 rounded-lg text-white font-bold text-base sm:text-lg transition-all hover:opacity-90 bg-white"
               style={{ color: '#C41C3B' }}
             >
               Commencer Maintenant <FaArrowRight />

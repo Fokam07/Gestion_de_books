@@ -10,12 +10,12 @@ export default function ContactPage() {
 
       <main className="pt-24">
         {/* Hero Section */}
-        <section className="py-20 px-4 sm:px-6 lg:px-8" style={{ backgroundColor: '#F5F5F5' }}>
+        <section className="py-14 sm:py-20 px-4 sm:px-6 lg:px-8" style={{ backgroundColor: '#F5F5F5' }}>
           <div className="max-w-6xl mx-auto text-center">
-            <h1 className="text-5xl font-bold mb-6" style={{ color: '#1A1A1A' }}>
+            <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-4 sm:mb-6" style={{ color: '#1A1A1A' }}>
               Nous Contacter
             </h1>
-            <p className="text-xl max-w-2xl mx-auto" style={{ color: '#404040' }}>
+            <p className="text-base sm:text-lg md:text-xl max-w-2xl mx-auto" style={{ color: '#404040' }}>
               Une question ? N'hésitez pas à nous contacter. Notre équipe est toujours là pour vous aider.
             </p>
           </div>
@@ -26,7 +26,7 @@ export default function ContactPage() {
           <div className="max-w-6xl mx-auto">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
               {/* Email */}
-              <div className="p-8 bg-white rounded-lg border-2 text-center" style={{ borderColor: '#E0E0E0' }}>
+              <div className="p-6 sm:p-8 bg-white rounded-lg border-2 text-center" style={{ borderColor: '#E0E0E0' }}>
                 <div className="text-5xl mb-4 flex justify-center" style={{ color: '#C41C3B' }}>
                   <FaEnvelope />
                 </div>
@@ -44,7 +44,7 @@ export default function ContactPage() {
               </div>
 
               {/* Phone */}
-              <div className="p-8 bg-white rounded-lg border-2 text-center" style={{ borderColor: '#E0E0E0' }}>
+              <div className="p-6 sm:p-8 bg-white rounded-lg border-2 text-center" style={{ borderColor: '#E0E0E0' }}>
                 <div className="text-5xl mb-4 flex justify-center" style={{ color: '#C41C3B' }}>
                   <FaPhone />
                 </div>
@@ -62,7 +62,7 @@ export default function ContactPage() {
               </div>
 
               {/* Location */}
-              <div className="p-8 bg-white rounded-lg border-2 text-center" style={{ borderColor: '#E0E0E0' }}>
+              <div className="p-6 sm:p-8 bg-white rounded-lg border-2 text-center" style={{ borderColor: '#E0E0E0' }}>
                 <div className="text-5xl mb-4 flex justify-center" style={{ color: '#C41C3B' }}>
                   <FaMapMarkerAlt />
                 </div>
@@ -78,8 +78,8 @@ export default function ContactPage() {
 
             {/* Contact Form */}
             <div className="max-w-2xl mx-auto">
-              <div className="p-8 bg-white rounded-lg border-2" style={{ borderColor: '#E0E0E0' }}>
-                <h2 className="text-3xl font-bold mb-8" style={{ color: '#1A1A1A' }}>
+              <div className="p-6 sm:p-8 bg-white rounded-lg border-2" style={{ borderColor: '#E0E0E0' }}>
+                <h2 className="text-2xl sm:text-3xl font-bold mb-8" style={{ color: '#1A1A1A' }}>
                   Envoyer un Message
                 </h2>
                 <form className="space-y-6">
@@ -160,7 +160,7 @@ export default function ContactPage() {
         {/* Social Section */}
         <section className="py-20 px-4 sm:px-6 lg:px-8" style={{ backgroundColor: '#F5F5F5' }}>
           <div className="max-w-6xl mx-auto text-center">
-            <h2 className="text-3xl font-bold mb-8" style={{ color: '#1A1A1A' }}>
+            <h2 className="text-2xl sm:text-3xl font-bold mb-8" style={{ color: '#1A1A1A' }}>
               Suivez-nous sur les réseaux sociaux
             </h2>
             <div className="flex justify-center gap-6">

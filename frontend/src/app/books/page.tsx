@@ -15,10 +15,10 @@ export default function BooksPage() {
 
       <main className="pt-24">
         {/* Hero Section */}
-        <section className="py-16 px-4 sm:px-6 lg:px-8 bg-slate-50">
+        <section className="py-14 sm:py-16 px-4 sm:px-6 lg:px-8 bg-slate-50">
           <div className="max-w-6xl mx-auto">
-            <h1 className="text-4xl font-bold mb-4 text-slate-900">Catalogue Complet</h1>
-            <p className="text-lg text-slate-600">
+            <h1 className="text-3xl sm:text-4xl font-bold mb-4 text-slate-900">Catalogue Complet</h1>
+            <p className="text-base sm:text-lg text-slate-600">
               Explorez notre collection de livres et trouvez votre prochaine lecture
             </p>
           </div>
@@ -57,15 +57,15 @@ export default function BooksPage() {
         {/* CTA Section */}
         <section className="py-20 px-4 sm:px-6 lg:px-8" style={{ backgroundColor: '#C41C3B' }}>
           <div className="max-w-6xl mx-auto text-center">
-            <h2 className="text-3xl font-bold mb-4 text-white">
+            <h2 className="text-2xl sm:text-3xl font-bold mb-4 text-white">
               Vous n'avez pas trouvé ce que vous cherchez ?
             </h2>
-            <p className="text-lg text-white mb-6">
+            <p className="text-base sm:text-lg text-white mb-6">
               Contactez notre équipe pour une recommandation personnalisée.
             </p>
             <a
               href="/contact"
-              className="inline-block px-8 py-3 rounded-lg text-white font-bold transition-all hover:opacity-90 bg-white"
+              className="inline-block px-6 sm:px-8 py-3 rounded-lg text-white font-bold transition-all hover:opacity-90 bg-white"
               style={{ color: '#C41C3B' }}
             >
               Nous Contacter

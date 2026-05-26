@@ -63,7 +63,7 @@ export default function BooksGrid({ searchQuery = '', selectedCategory = '', ava
   return (
     <section className="py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-6xl mx-auto">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-6">
           {filtered.map((livre) => {
             const disponibles = livre.exemplaires.filter(e => e.statut === 'DISPONIBLE').length;
             const hasAvailable = disponibles > 0;
@@ -74,28 +74,28 @@ export default function BooksGrid({ searchQuery = '', selectedCategory = '', ava
                 className="bg-white rounded-xl border border-slate-100 shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300 overflow-hidden cursor-pointer group flex flex-col justify-between"
               >
                 <div>
-                  <div className="relative h-64 bg-slate-100 w-full">
+                  <div className="relative h-44 sm:h-64 bg-slate-100 w-full">
                     {livre.imageUrl ? (
-                      <Image src={livre.imageUrl} alt={livre.titre} fill className="object-cover" sizes="25vw" />
+                      <Image src={livre.imageUrl} alt={livre.titre} fill className="object-cover" sizes="25vw" unoptimized />
                     ) : (
                       <div className="absolute inset-0 flex flex-col items-center justify-center text-slate-300 bg-slate-50">
-                        <FaBook className="text-4xl mb-2" />
+                        <FaBook className="text-3xl sm:text-4xl mb-2" />
                       </div>
                     )}
-                    <div className={`absolute top-3 right-3 px-2.5 py-1 rounded-full text-xs font-bold ${
+                    <div className={`absolute top-2 right-2 sm:top-3 sm:right-3 px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-full text-[10px] sm:text-xs font-bold ${
                       hasAvailable ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'
                     }`}>
                       {hasAvailable ? `${disponibles} dispo.` : 'Indisponible'}
                     </div>
                   </div>
-                  <div className="p-5">
-                    <h3 className="font-bold text-slate-900 text-base leading-tight mb-1 line-clamp-2">{livre.titre}</h3>
-                    <p className="text-slate-500 text-sm mb-2">{livre.auteur}</p>
+                  <div className="p-3 sm:p-5">
+                    <h3 className="font-bold text-slate-900 text-sm sm:text-base leading-tight mb-1 line-clamp-2">{livre.titre}</h3>
+                    <p className="text-slate-500 text-xs sm:text-sm mb-2 line-clamp-2">{livre.auteur}</p>
                   </div>
                 </div>
-                <div className="px-5 pb-5">
-                  <div className="w-full py-2 bg-slate-50 text-slate-600 rounded-lg flex items-center justify-center gap-2 text-xs font-bold border border-slate-100">
-                    <FaInfoCircle /> Voir les détails
+                <div className="px-3 pb-3 sm:px-5 sm:pb-5">
+                  <div className="w-full py-2 bg-slate-50 text-slate-600 rounded-lg flex items-center justify-center gap-1.5 sm:gap-2 text-[11px] sm:text-xs font-bold border border-slate-100 text-center">
+                    <FaInfoCircle className="shrink-0" /> Voir les détails
                   </div>
                 </div>
               </div>
@@ -110,7 +110,7 @@ export default function BooksGrid({ searchQuery = '', selectedCategory = '', ava
           <div className="bg-white rounded-2xl max-w-xl w-full shadow-2xl border border-slate-100 overflow-hidden relative flex flex-col md:flex-row" onClick={(e) => e.stopPropagation()}>
             <div className="w-full md:w-44 bg-slate-50 p-6 flex items-center justify-center border-b md:border-r border-slate-100">
               <div className="w-32 h-48 bg-white rounded-xl overflow-hidden border border-slate-200 relative shadow-md">
-                {selectedBook.imageUrl ? <img src={selectedBook.imageUrl} alt={selectedBook.titre} className="w-full h-full object-cover" /> : <FaBook className="text-4xl text-slate-200 m-auto" />}
+                {selectedBook.imageUrl ? <img src={selectedBook.imageUrl} alt={selectedBook.titre} loading="lazy" className="w-full h-full object-cover" /> : <FaBook className="text-4xl text-slate-200 m-auto" />}
               </div>
             </div>
             <div className="p-6 flex-1 flex flex-col justify-between">

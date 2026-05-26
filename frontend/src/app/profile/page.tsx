@@ -103,7 +103,7 @@ export default function ProfilePage() {
                     ) : (
                       <div className="space-y-3">
                         {activeEmprunts.map(emprunt => (
-                          <div key={emprunt.id} className="flex items-center justify-between p-3 bg-slate-50 rounded-xl">
+                          <div key={emprunt.id} className="flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between p-3 bg-slate-50 rounded-xl">
                             <div>
                               {emprunt.exemplaires.map(ex => (
                                 <div key={ex.exemplaireId}>
@@ -129,7 +129,7 @@ export default function ProfilePage() {
                     ) : (
                       <div className="space-y-3">
                         {activeReservations.map(res => (
-                          <div key={res.id} className="flex items-center justify-between p-3 bg-slate-50 rounded-xl">
+                          <div key={res.id} className="flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between p-3 bg-slate-50 rounded-xl">
                             <div>
                               <p className="font-semibold text-slate-800 text-sm">{res.exemplaire.livre.titre}</p>
                               <p className="text-xs text-slate-500">{res.exemplaire.livre.auteur}</p>
@@ -149,7 +149,7 @@ export default function ProfilePage() {
                       </h3>
                       <div className="space-y-2">
                         {pastEmprunts.map(emprunt => (
-                          <div key={emprunt.id} className="flex items-center justify-between p-3 bg-slate-50 rounded-xl">
+                          <div key={emprunt.id} className="flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between p-3 bg-slate-50 rounded-xl">
                             <div>
                               {emprunt.exemplaires.map(ex => (
                                 <p key={ex.exemplaireId} className="text-sm text-slate-700 font-medium">{ex.exemplaire.livre.titre}</p>

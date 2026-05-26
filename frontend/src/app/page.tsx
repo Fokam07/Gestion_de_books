@@ -31,8 +31,8 @@ export default function Home() {
 
         {/* 💡 PASSAGE DES MÊMES ÉTATS À LA GRILLE POUR FILTRAGE INSTANTANÉ */}
         <div id="results-section" className="bg-slate-50/40 border-b border-slate-100">
-          <div className="max-w-6xl mx-auto pt-12 px-4">
-            <h2 className="text-2xl font-serif font-bold text-slate-800">Résultats de recherche</h2>
+          <div className="max-w-6xl mx-auto pt-10 sm:pt-12 px-4">
+            <h2 className="text-xl sm:text-2xl font-serif font-bold text-slate-800">Résultats de recherche</h2>
             <p className="text-xs text-slate-400 mt-1">Mise à jour en temps réel selon vos critères</p>
           </div>
           <BooksGrid 
@@ -43,10 +43,10 @@ export default function Home() {
         </div>
 
         {/* Section Caractéristiques */}
-        <section className="py-24 bg-gradient-to-b from-slate-50 to-white border-y border-slate-100 px-4 sm:px-6 lg:px-8">
+        <section className="py-16 sm:py-24 bg-linear-to-b from-slate-50 to-white border-y border-slate-100 px-4 sm:px-6 lg:px-8">
           <div className="max-w-7xl mx-auto">
-            <div className="text-center max-w-3xl mx-auto mb-20">
-              <h2 className="text-3xl font-serif font-bold tracking-tight text-slate-900 sm:text-5xl mb-4">
+            <div className="text-center max-w-3xl mx-auto mb-12 sm:mb-20">
+              <h2 className="text-2xl sm:text-3xl md:text-5xl font-serif font-bold tracking-tight text-slate-900 mb-4">
                 Pourquoi choisir la plateforme <span className="text-[#C41C3B]">Shelfio</span> ?
               </h2>
             </div>
@@ -76,9 +76,9 @@ export default function Home() {
         </section>
 
         {/* Section CTA */}
-        <section className="py-24 px-4 sm:px-6 lg:px-8 bg-[#C41C3B] text-white text-center">
-          <h2 className="text-3xl font-serif font-bold mb-4">Optimisez votre expérience de lecture dès aujourd'hui</h2>
-          <Link href="/auth/register" className="inline-flex items-center gap-2 mt-6 px-8 py-4 rounded-xl bg-white text-[#C41C3B] font-bold shadow-lg">
+        <section className="py-16 sm:py-24 px-4 sm:px-6 lg:px-8 bg-[#C41C3B] text-white text-center">
+          <h2 className="text-2xl sm:text-3xl font-serif font-bold mb-4">Optimisez votre expérience de lecture dès aujourd'hui</h2>
+          <Link href="/auth/register" className="inline-flex items-center gap-2 mt-6 px-6 sm:px-8 py-3.5 sm:py-4 rounded-xl bg-white text-[#C41C3B] font-bold shadow-lg">
             <span>Créer un compte personnel</span> <FaArrowRight />
           </Link>
         </section>

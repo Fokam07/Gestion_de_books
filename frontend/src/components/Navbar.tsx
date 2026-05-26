@@ -1,15 +1,17 @@
 'use client';
 
 import Link from 'next/link';
-import Image from 'next/image';
 import { useState } from 'react';
+import BrandLogo from '@/components/BrandLogo';
 import { 
   FaChevronDown, 
+  FaBars,
   FaHome, 
   FaBook, 
   FaInfoCircle, 
   FaPhone, 
   FaSignInAlt, 
+  FaTimes,
   FaUserPlus
 } from 'react-icons/fa';
 
@@ -30,24 +32,15 @@ const categories = [
 
 export default function Navbar() {
   const [isCatDropdownOpen, setIsCategoryDropdownOpen] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   return (
     <nav className="fixed w-full top-0 bg-white/95 backdrop-blur-md z-50 border-b border-slate-200 border-t-4 border-t-[#C41C3B] shadow-md transition-all duration-300">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-26">
+        <div className="flex justify-between items-center min-h-26 py-3 gap-4">
           
-          <Link href="/" className="flex items-center flex-shrink-0 transition-transform active:scale-98 py-2 w-72">
-            <div className="relative">
-              <Image
-                src="/logo.png"
-                alt="Shelfio Logo"
-                width={180}
-                height={20}
-                priority
-                className="object-contain object-left max-w-[240px]" 
-                style={{ width: '100%', height: 'auto' }}
-              />
-            </div>
+          <Link href="/" className="flex items-center shrink-0 transition-transform active:scale-98 py-2 min-w-0" onClick={() => setIsMobileMenuOpen(false)}>
+            <BrandLogo variant="default" />
           </Link>
 
           {/* Liens de Navigation */}
@@ -78,7 +71,7 @@ export default function Navbar() {
 
               {/* Dropdown Menu */}
               <div
-                className={`absolute left-0 top-[100%] w-64 bg-white rounded-b-xl shadow-xl border border-slate-100 transition-all duration-300 origin-top-left ${
+                className={`absolute left-0 top-full w-64 bg-white rounded-b-xl shadow-xl border border-slate-100 transition-all duration-300 origin-top-left ${
                   isCatDropdownOpen ? 'opacity-100 scale-100 visible translate-y-0' : 'opacity-0 scale-95 invisible -translate-y-2'
                 }`}
               >
@@ -118,7 +111,7 @@ export default function Navbar() {
           </div>
 
           {/* Boutons d'Authentification */}
-          <div className="flex items-center gap-3">
+          <div className="hidden md:flex items-center gap-3">
             <Link
               href="/auth/login"
               className="px-4.5 py-2.5 text-sm font-semibold text-[#C41C3B] rounded-lg border border-slate-200 bg-slate-50/50 transition-all hover:bg-red-50/60 hover:border-red-200 hidden sm:inline-flex items-center gap-2"
@@ -133,7 +126,70 @@ export default function Navbar() {
             </Link>
           </div>
 
+          <button
+            type="button"
+            aria-label={isMobileMenuOpen ? 'Fermer le menu' : 'Ouvrir le menu'}
+            onClick={() => setIsMobileMenuOpen((prev) => !prev)}
+            className="md:hidden inline-flex items-center justify-center w-11 h-11 rounded-xl border border-slate-200 bg-white text-slate-700 shadow-sm"
+          >
+            {isMobileMenuOpen ? <FaTimes /> : <FaBars />}
+          </button>
+
         </div>
+
+        {isMobileMenuOpen && (
+          <div className="md:hidden pb-4">
+            <div className="rounded-2xl border border-slate-200 bg-white shadow-lg p-4 space-y-4">
+              <div className="grid grid-cols-1 gap-2">
+                <Link href="/" onClick={() => setIsMobileMenuOpen(false)} className="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold text-slate-800 bg-slate-50">
+                  <FaHome className="text-slate-400" />
+                  <span>Accueil</span>
+                </Link>
+                <Link href="/about" onClick={() => setIsMobileMenuOpen(false)} className="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold text-slate-800 bg-slate-50">
+                  <FaInfoCircle className="text-slate-400" />
+                  <span>À Propos</span>
+                </Link>
+                <Link href="/contact" onClick={() => setIsMobileMenuOpen(false)} className="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold text-slate-800 bg-slate-50">
+                  <FaPhone className="text-slate-400" />
+                  <span>Contact</span>
+                </Link>
+              </div>
+
+              <div className="rounded-xl border border-slate-200 bg-slate-50/70 p-3">
+                <p className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-3">Catégories</p>
+                <div className="grid grid-cols-1 gap-2 max-h-64 overflow-y-auto pr-1">
+                  {categories.map((category) => (
+                    <Link
+                      key={category.value}
+                      href={`/?category=${category.value}`}
+                      onClick={() => setIsMobileMenuOpen(false)}
+                      className="rounded-lg bg-white px-3 py-2.5 text-sm font-medium text-slate-700 border border-slate-200"
+                    >
+                      {category.label}
+                    </Link>
+                  ))}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 gap-2">
+                <Link
+                  href="/auth/login"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className="w-full px-4 py-3 text-sm font-semibold text-[#C41C3B] rounded-xl border border-slate-200 bg-slate-50/50 inline-flex items-center justify-center gap-2"
+                >
+                  <FaSignInAlt className="text-xs opacity-80" /> Connexion
+                </Link>
+                <Link
+                  href="/auth/register"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className="w-full px-4 py-3 text-sm font-semibold text-white bg-[#C41C3B] rounded-xl shadow-sm inline-flex items-center justify-center gap-2"
+                >
+                  <FaUserPlus className="text-xs" /> S'inscrire
+                </Link>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </nav>
   );
