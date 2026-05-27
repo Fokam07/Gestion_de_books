@@ -1,6 +1,17 @@
-import { getLivre } from '@/lib/api';
+import { getLivre, getLivres } from '@/lib/api';
 import BookDetailClient from './BookDetailClient';
 import { notFound } from 'next/navigation';
+
+export const dynamicParams = false;
+
+export async function generateStaticParams() {
+  try {
+    const livres = await getLivres();
+    return livres.map((l) => ({ id: String(l.id) }));
+  } catch {
+    return [];
+  }
+}
 
 export default async function BookPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;

@@ -15,6 +15,13 @@ node_modules/
 frontend/.next/
 frontend/out/
 
+# Capacitor / Android (généré)
+frontend/android/
+frontend/ios/
+
+# APK générés
+generated/
+
 # Logs
 npm-debug.log*
 yarn-error.log*

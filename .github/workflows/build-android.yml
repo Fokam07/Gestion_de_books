@@ -1,0 +1,70 @@
+name: Build Android APK
+
+on:
+  push:
+    branches:
+      - '**'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'frontend/**'
+      - 'docker/**'
+      - 'scripts/**'
+  workflow_dispatch:
+
+jobs:
+  build-apk:
+    name: Build APK (Capacitor + Docker)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout du code
+        uses: actions/checkout@v4
+
+      - name: Set up QEMU (multi-arch)
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Cache image Docker
+        uses: actions/cache@v4
+        with:
+          path: /tmp/docker-cache
+          key: docker-android-builder-${{ hashFiles('docker/Dockerfile') }}
+          restore-keys: |
+            docker-android-builder-
+
+      - name: Build de l'image Docker
+        run: |
+          docker buildx build \
+            --platform linux/amd64 \
+            --cache-from type=local,src=/tmp/docker-cache \
+            --cache-to type=local,dest=/tmp/docker-cache,mode=max \
+            --load \
+            -t docker-android-builder:latest \
+            -f docker/Dockerfile .
+
+      - name: Créer le dossier de sortie
+        run: mkdir -p generated
+
+      - name: Build APK via Docker
+        run: |
+          docker run --rm \
+            --platform linux/amd64 \
+            -e NEXT_PUBLIC_API_URL=https://gestion-de-books.onrender.com \
+            -v ${{ github.workspace }}/frontend:/workspace/app \
+            -v ${{ github.workspace }}/generated:/workspace/apk \
+            -v android-gradle-cache:/root/.gradle \
+            -v /workspace/app/node_modules \
+            --entrypoint /bin/bash \
+            -v ${{ github.workspace }}/scripts/docker-entrypoint.sh:/entrypoint.sh \
+            docker-android-builder:latest /entrypoint.sh
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: bibliotheque-debug-apk
+          path: generated/app-debug.apk
+          retention-days: 30

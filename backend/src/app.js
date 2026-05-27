@@ -24,6 +24,7 @@ const allowedOrigins = process.env.CLIENT_URL
       ...process.env.CLIENT_URL.split(',').map(s => s.trim()),
       'http://localhost:3000',
       'http://localhost:3001',
+      'capacitor://localhost',
     ]
   : true;
 app.use(cors({

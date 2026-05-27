@@ -1,0 +1,28 @@
+services:
+  android-builder:
+    platform: linux/amd64
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+      platforms:
+        - linux/amd64
+
+    working_dir: /workspace/app
+
+    volumes:
+      - ../frontend:/workspace/app
+      - ../scripts/docker-entrypoint.sh:/entrypoint.sh
+      - android-gradle-cache:/root/.gradle
+      - /workspace/app/node_modules
+      - ../generated:/workspace/apk
+      
+    environment:
+      - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-https://gestion-de-books.onrender.com}
+    entrypoint: ["/bin/bash", "/entrypoint.sh"]
+    dns:
+      - 8.8.8.8
+      - 1.1.1.1
+    tty: true
+
+volumes:
+  android-gradle-cache:
