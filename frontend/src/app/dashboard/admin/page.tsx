@@ -196,8 +196,8 @@ export default function AdminDashboard() {
             <span className="bg-white/10 text-white text-xs font-bold px-3 py-1 rounded-full border border-white/20 uppercase tracking-widest">
               Contrôle Central
             </span>
-            <h1 className="text-4xl font-extrabold mt-3 mb-2 font-serif">Panneau d'Administration</h1>
-            <p className="text-slate-300 font-light">Bienvenue, {user?.nom ?? 'Administrateur'}</p>
+            <h1 className="text-2xl sm:text-4xl font-extrabold mt-3 mb-2 font-serif">Panneau d'Administration</h1>
+            <p className="text-slate-300 text-sm sm:text-base font-light">Bienvenue, {user?.nom ?? 'Administrateur'}</p>
           </div>
         </section>
 
@@ -211,47 +211,49 @@ export default function AdminDashboard() {
             )}
 
             {/* Stats */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
-              <div className="p-6 bg-white rounded-xl border border-slate-100 shadow-sm">
-                <p className="text-slate-500 text-xs font-bold uppercase tracking-wider">Total Livres</p>
-                <p className="text-4xl font-black mt-2 text-[#C41C3B]">{livres.length}</p>
-                <div className="w-8 h-8 rounded-lg bg-red-50 text-[#C41C3B] flex items-center justify-center mt-2"><FaBook /></div>
+            <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6 mb-8 sm:mb-12">
+              <div className="p-3 sm:p-6 bg-white rounded-xl border border-slate-100 shadow-sm">
+                <p className="text-slate-500 text-[10px] sm:text-xs font-bold uppercase tracking-wider truncate">Total Livres</p>
+                <p className="text-2xl sm:text-4xl font-black mt-1 sm:mt-2 text-[#C41C3B]">{livres.length}</p>
+                <div className="hidden sm:flex w-8 h-8 rounded-lg bg-red-50 text-[#C41C3B] items-center justify-center mt-2"><FaBook /></div>
               </div>
-              <div className="p-6 bg-white rounded-xl border border-slate-100 shadow-sm">
-                <p className="text-slate-500 text-xs font-bold uppercase tracking-wider">Exemplaires Dispo.</p>
-                <p className="text-4xl font-black mt-2 text-blue-600">{disponibles}</p>
-                <div className="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center mt-2"><FaChartLine /></div>
+              <div className="p-3 sm:p-6 bg-white rounded-xl border border-slate-100 shadow-sm">
+                <p className="text-slate-500 text-[10px] sm:text-xs font-bold uppercase tracking-wider truncate">Dispo.</p>
+                <p className="text-2xl sm:text-4xl font-black mt-1 sm:mt-2 text-blue-600">{disponibles}</p>
+                <div className="hidden sm:flex w-8 h-8 rounded-lg bg-blue-50 text-blue-600 items-center justify-center mt-2"><FaChartLine /></div>
               </div>
-              <div className="p-6 bg-white rounded-xl border border-slate-100 shadow-sm">
-                <p className="text-slate-500 text-xs font-bold uppercase tracking-wider">Remises en Attente</p>
-                <p className="text-4xl font-black mt-2 text-yellow-600">{listAttente.length}</p>
-                <div className="w-8 h-8 rounded-lg bg-amber-50 text-yellow-600 flex items-center justify-center mt-2"><FaHourglassHalf /></div>
+              <div className="p-3 sm:p-6 bg-white rounded-xl border border-slate-100 shadow-sm">
+                <p className="text-slate-500 text-[10px] sm:text-xs font-bold uppercase tracking-wider truncate">En attente</p>
+                <p className="text-2xl sm:text-4xl font-black mt-1 sm:mt-2 text-yellow-600">{listAttente.length}</p>
+                <div className="hidden sm:flex w-8 h-8 rounded-lg bg-amber-50 text-yellow-600 items-center justify-center mt-2"><FaHourglassHalf /></div>
               </div>
-              <div className="p-6 bg-white rounded-xl border border-slate-100 shadow-sm">
-                <p className="text-slate-500 text-xs font-bold uppercase tracking-wider">Emprunts En Cours</p>
-                <p className="text-4xl font-black mt-2 text-emerald-600">{listEnCours.length}</p>
-                <div className="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center mt-2"><FaBookReader /></div>
+              <div className="p-3 sm:p-6 bg-white rounded-xl border border-slate-100 shadow-sm">
+                <p className="text-slate-500 text-[10px] sm:text-xs font-bold uppercase tracking-wider truncate">En cours</p>
+                <p className="text-2xl sm:text-4xl font-black mt-1 sm:mt-2 text-emerald-600">{listEnCours.length}</p>
+                <div className="hidden sm:flex w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 items-center justify-center mt-2"><FaBookReader /></div>
               </div>
             </div>
 
             {/* Tabs Restructurés */}
-            <div className="mb-8 border-b border-slate-200 overflow-x-auto">
-              <div className="flex gap-4 min-w-max">
+            <div className="mb-6 sm:mb-8 border-b border-slate-200 overflow-x-auto">
+              <div className="flex gap-1 sm:gap-4 min-w-max">
                 {[
-                  { id: 'dashboard', label: 'Aperçu', icon: FaClipboard, activeColor: 'border-[#C41C3B] text-[#C41C3B]' },
-                  { id: 'books', label: 'Livres', icon: FaBook, activeColor: 'border-blue-600 text-blue-600' },
-                  { id: 'emprunts_attente', label: '1. Valider Remises', icon: FaHourglassHalf, activeColor: 'border-amber-500 text-amber-500' },
-                  { id: 'emprunts_cours', label: '2. En Cours / Retours', icon: FaBookReader, activeColor: 'border-emerald-500 text-emerald-500' },
-                  { id: 'reservations', label: 'Réservations', icon: FaBoxOpen, activeColor: 'border-orange-500 text-orange-500' },
+                  { id: 'dashboard',       label: 'Aperçu',           shortLabel: 'Aperçu',    icon: FaClipboard,    activeColor: 'border-[#C41C3B] text-[#C41C3B]' },
+                  { id: 'books',           label: 'Livres',            shortLabel: 'Livres',    icon: FaBook,         activeColor: 'border-blue-600 text-blue-600' },
+                  { id: 'emprunts_attente',label: 'Valider Remises',  shortLabel: 'Remises',   icon: FaHourglassHalf,activeColor: 'border-amber-500 text-amber-500' },
+                  { id: 'emprunts_cours',  label: 'En Cours/Retours', shortLabel: 'En Cours',  icon: FaBookReader,   activeColor: 'border-emerald-500 text-emerald-500' },
+                  { id: 'reservations',    label: 'Réservations',     shortLabel: 'Réserv.',   icon: FaBoxOpen,      activeColor: 'border-orange-500 text-orange-500' },
                 ].map((tab) => (
                   <button
                     key={tab.id}
                     onClick={() => setActiveTab(tab.id)}
-                    className={`pb-4 font-semibold text-sm whitespace-nowrap flex items-center gap-2 border-b-2 transition-all cursor-pointer ${
+                    className={`pb-3 sm:pb-4 px-1 sm:px-0 font-semibold whitespace-nowrap flex items-center gap-1.5 border-b-2 transition-all cursor-pointer text-xs sm:text-sm ${
                       activeTab === tab.id ? tab.activeColor : 'border-transparent text-slate-500 hover:text-slate-800'
                     }`}
                   >
-                    <tab.icon /> {tab.label}
+                    <tab.icon className="shrink-0" />
+                    <span className="hidden sm:inline">{tab.label}</span>
+                    <span className="sm:hidden">{tab.shortLabel}</span>
                   </button>
                 ))}
               </div>
@@ -345,79 +347,137 @@ export default function AdminDashboard() {
 
                 {/* ONGLET 1 : VALIDATION DES REMISES */}
                 {activeTab === 'emprunts_attente' && (
-                  <div className="overflow-x-auto bg-white rounded-xl border border-slate-200 shadow-sm">
-                    <table className="w-full border-collapse">
-                      <thead>
-                        <tr className="bg-slate-50/75 border-b border-slate-100">
-                          <th className="p-4 text-left text-xs font-bold uppercase tracking-wider text-slate-500">Lecteur</th>
-                          <th className="p-4 text-left text-xs font-bold uppercase tracking-wider text-slate-500">Livre demandé</th>
-                          <th className="p-4 text-left text-xs font-bold uppercase tracking-wider text-slate-500">Date Demande</th>
-                          <th className="p-4 text-center text-xs font-bold uppercase tracking-wider text-slate-500">Action</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-slate-100">
-                        {listAttente.map((emprunt) => (
-                          <tr key={emprunt.id} className="hover:bg-slate-50/50 transition-colors">
-                            <td className="p-4">
-                              <p className="font-semibold text-slate-800 text-sm">{emprunt.user?.nom ?? '-'}</p>
-                              <p className="text-xs text-slate-400">{emprunt.user?.email ?? ''}</p>
-                            </td>
-                            <td className="p-4 text-slate-700 text-sm font-medium">{emprunt.exemplaires.map(ex => ex.exemplaire.livre.titre).join(', ')}</td>
-                            <td className="p-4 text-slate-500 text-sm">{formatDate(emprunt.dateEmprunt)}</td>
-                            <td className="p-4 text-center">
-                              <button
-                                onClick={() => handleValiderEmprunt(emprunt.id)}
-                                disabled={actionLoading === `emprunt-valider-${emprunt.id}`}
-                                className="px-4 py-2 rounded-lg text-white font-bold bg-blue-600 hover:bg-blue-700 text-xs disabled:opacity-60 flex items-center gap-1.5 mx-auto transition-all"
-                              >
-                                {actionLoading === `emprunt-valider-${emprunt.id}` ? <span className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin inline-block" /> : null}
-                                Valider la remise (Donner le livre)
-                              </button>
-                            </td>
+                  <div>
+                    {/* Table desktop */}
+                    <div className="hidden sm:block overflow-x-auto bg-white rounded-xl border border-slate-200 shadow-sm">
+                      <table className="w-full border-collapse">
+                        <thead>
+                          <tr className="bg-slate-50/75 border-b border-slate-100">
+                            <th className="p-4 text-left text-xs font-bold uppercase tracking-wider text-slate-500">Lecteur</th>
+                            <th className="p-4 text-left text-xs font-bold uppercase tracking-wider text-slate-500">Livre demandé</th>
+                            <th className="p-4 text-left text-xs font-bold uppercase tracking-wider text-slate-500">Date Demande</th>
+                            <th className="p-4 text-center text-xs font-bold uppercase tracking-wider text-slate-500">Action</th>
                           </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                    {listAttente.length === 0 && <div className="py-12 text-center text-slate-400">Aucune remise de livre en attente.</div>}
+                        </thead>
+                        <tbody className="divide-y divide-slate-100">
+                          {listAttente.map((emprunt) => (
+                            <tr key={emprunt.id} className="hover:bg-slate-50/50 transition-colors">
+                              <td className="p-4">
+                                <p className="font-semibold text-slate-800 text-sm">{emprunt.user?.nom ?? '-'}</p>
+                                <p className="text-xs text-slate-400">{emprunt.user?.email ?? ''}</p>
+                              </td>
+                              <td className="p-4 text-slate-700 text-sm font-medium">{emprunt.exemplaires.map(ex => ex.exemplaire.livre.titre).join(', ')}</td>
+                              <td className="p-4 text-slate-500 text-sm">{formatDate(emprunt.dateEmprunt)}</td>
+                              <td className="p-4 text-center">
+                                <button
+                                  onClick={() => handleValiderEmprunt(emprunt.id)}
+                                  disabled={actionLoading === `emprunt-valider-${emprunt.id}`}
+                                  className="px-4 py-2 rounded-lg text-white font-bold bg-blue-600 hover:bg-blue-700 text-xs disabled:opacity-60 flex items-center gap-1.5 mx-auto transition-all"
+                                >
+                                  {actionLoading === `emprunt-valider-${emprunt.id}` ? <span className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin inline-block" /> : null}
+                                  Valider la remise
+                                </button>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                      {listAttente.length === 0 && <div className="py-12 text-center text-slate-400">Aucune remise de livre en attente.</div>}
+                    </div>
+                    {/* Cards mobile */}
+                    <div className="sm:hidden space-y-3">
+                      {listAttente.length === 0 ? (
+                        <div className="py-12 text-center text-slate-400 bg-white rounded-xl border border-slate-200">Aucune remise en attente.</div>
+                      ) : listAttente.map((emprunt) => (
+                        <div key={emprunt.id} className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm">
+                          <div className="flex items-start justify-between gap-2 mb-2">
+                            <div>
+                              <p className="font-bold text-slate-800 text-sm">{emprunt.user?.nom ?? '-'}</p>
+                              <p className="text-xs text-slate-400">{emprunt.user?.email ?? ''}</p>
+                            </div>
+                            <span className="text-xs px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 font-bold shrink-0">Attente</span>
+                          </div>
+                          <p className="text-sm text-slate-700 font-medium mb-1">{emprunt.exemplaires.map(ex => ex.exemplaire.livre.titre).join(', ')}</p>
+                          <p className="text-xs text-slate-400 mb-3">{formatDate(emprunt.dateEmprunt)}</p>
+                          <button
+                            onClick={() => handleValiderEmprunt(emprunt.id)}
+                            disabled={actionLoading === `emprunt-valider-${emprunt.id}`}
+                            className="w-full py-2.5 rounded-xl text-white font-bold bg-blue-600 text-xs disabled:opacity-60 flex items-center justify-center gap-2"
+                          >
+                            {actionLoading === `emprunt-valider-${emprunt.id}` ? <span className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" /> : null}
+                            Valider — Donner le livre
+                          </button>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 )}
 
                 {/* ONGLET 2 : EN COURS & RETOURS */}
                 {activeTab === 'emprunts_cours' && (
-                  <div className="overflow-x-auto bg-white rounded-xl border border-slate-200 shadow-sm">
-                    <table className="w-full border-collapse">
-                      <thead>
-                        <tr className="bg-slate-50/75 border-b border-slate-100">
-                          <th className="p-4 text-left text-xs font-bold uppercase tracking-wider text-slate-500">Lecteur</th>
-                          <th className="p-4 text-left text-xs font-bold uppercase tracking-wider text-slate-500">Livre en possession</th>
-                          <th className="p-4 text-left text-xs font-bold uppercase tracking-wider text-slate-500">Date Sortie</th>
-                          <th className="p-4 text-center text-xs font-bold uppercase tracking-wider text-slate-500">Action</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-slate-100">
-                        {listEnCours.map((emprunt) => (
-                          <tr key={emprunt.id} className="hover:bg-slate-50/50 transition-colors">
-                            <td className="p-4">
-                              <p className="font-semibold text-slate-800 text-sm">{emprunt.user?.nom ?? '-'}</p>
-                              <p className="text-xs text-slate-400">{emprunt.user?.email ?? ''}</p>
-                            </td>
-                            <td className="p-4 text-slate-700 text-sm">{emprunt.exemplaires.map(ex => ex.exemplaire.livre.titre).join(', ')}</td>
-                            <td className="p-4 text-slate-500 text-sm">{formatDate(emprunt.dateEmprunt)}</td>
-                            <td className="p-4 text-center">
-                              <button
-                                onClick={() => handleRetournerEmprunt(emprunt.id)}
-                                disabled={actionLoading === `emprunt-retourner-${emprunt.id}`}
-                                className="px-4 py-2 rounded-lg text-white font-bold bg-[#C41C3B] hover:bg-[#a81430] text-xs disabled:opacity-60 flex items-center gap-1.5 mx-auto transition-all"
-                              >
-                                {actionLoading === `emprunt-retourner-${emprunt.id}` ? <span className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin inline-block" /> : null}
-                                Valider le retour (Livre rendu)
-                              </button>
-                            </td>
+                  <div>
+                    {/* Table desktop */}
+                    <div className="hidden sm:block overflow-x-auto bg-white rounded-xl border border-slate-200 shadow-sm">
+                      <table className="w-full border-collapse">
+                        <thead>
+                          <tr className="bg-slate-50/75 border-b border-slate-100">
+                            <th className="p-4 text-left text-xs font-bold uppercase tracking-wider text-slate-500">Lecteur</th>
+                            <th className="p-4 text-left text-xs font-bold uppercase tracking-wider text-slate-500">Livre en possession</th>
+                            <th className="p-4 text-left text-xs font-bold uppercase tracking-wider text-slate-500">Date Sortie</th>
+                            <th className="p-4 text-center text-xs font-bold uppercase tracking-wider text-slate-500">Action</th>
                           </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                    {listEnCours.length === 0 && <div className="py-12 text-center text-slate-400">Aucun livre n'est actuellement en circulation.</div>}
+                        </thead>
+                        <tbody className="divide-y divide-slate-100">
+                          {listEnCours.map((emprunt) => (
+                            <tr key={emprunt.id} className="hover:bg-slate-50/50 transition-colors">
+                              <td className="p-4">
+                                <p className="font-semibold text-slate-800 text-sm">{emprunt.user?.nom ?? '-'}</p>
+                                <p className="text-xs text-slate-400">{emprunt.user?.email ?? ''}</p>
+                              </td>
+                              <td className="p-4 text-slate-700 text-sm">{emprunt.exemplaires.map(ex => ex.exemplaire.livre.titre).join(', ')}</td>
+                              <td className="p-4 text-slate-500 text-sm">{formatDate(emprunt.dateEmprunt)}</td>
+                              <td className="p-4 text-center">
+                                <button
+                                  onClick={() => handleRetournerEmprunt(emprunt.id)}
+                                  disabled={actionLoading === `emprunt-retourner-${emprunt.id}`}
+                                  className="px-4 py-2 rounded-lg text-white font-bold bg-[#C41C3B] hover:bg-[#a81430] text-xs disabled:opacity-60 flex items-center gap-1.5 mx-auto transition-all"
+                                >
+                                  {actionLoading === `emprunt-retourner-${emprunt.id}` ? <span className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin inline-block" /> : null}
+                                  Valider le retour
+                                </button>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                      {listEnCours.length === 0 && <div className="py-12 text-center text-slate-400">Aucun livre n'est actuellement en circulation.</div>}
+                    </div>
+                    {/* Cards mobile */}
+                    <div className="sm:hidden space-y-3">
+                      {listEnCours.length === 0 ? (
+                        <div className="py-12 text-center text-slate-400 bg-white rounded-xl border border-slate-200">Aucun livre en circulation.</div>
+                      ) : listEnCours.map((emprunt) => (
+                        <div key={emprunt.id} className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm">
+                          <div className="flex items-start justify-between gap-2 mb-2">
+                            <div>
+                              <p className="font-bold text-slate-800 text-sm">{emprunt.user?.nom ?? '-'}</p>
+                              <p className="text-xs text-slate-400">{emprunt.user?.email ?? ''}</p>
+                            </div>
+                            <span className="text-xs px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 font-bold shrink-0">En cours</span>
+                          </div>
+                          <p className="text-sm text-slate-700 font-medium mb-1">{emprunt.exemplaires.map(ex => ex.exemplaire.livre.titre).join(', ')}</p>
+                          <p className="text-xs text-slate-400 mb-3">{formatDate(emprunt.dateEmprunt)}</p>
+                          <button
+                            onClick={() => handleRetournerEmprunt(emprunt.id)}
+                            disabled={actionLoading === `emprunt-retourner-${emprunt.id}`}
+                            className="w-full py-2.5 rounded-xl text-white font-bold bg-[#C41C3B] text-xs disabled:opacity-60 flex items-center justify-center gap-2 hover:bg-[#a81430]"
+                          >
+                            {actionLoading === `emprunt-retourner-${emprunt.id}` ? <span className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" /> : null}
+                            Valider le retour
+                          </button>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 )}
 

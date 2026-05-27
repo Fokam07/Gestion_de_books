@@ -82,6 +82,7 @@ export default function HeroCarousel({
               unoptimized
               className="object-cover object-center"
               priority={index === 0}
+              loading="eager"
             />
             <div className="absolute inset-0 bg-linear-to-b from-slate-950/70 via-slate-900/60 to-slate-950/40" />
           </div>

@@ -4,13 +4,29 @@ import StudentNavbar from '@/components/StudentNavbar';
 import { useAuth } from '@/context/AuthContext';
 import {
   livresApi, empruntsApi, reservationsApi,
-  Livre, Emprunt, Reservation,
+  Livre, Emprunt, Reservation, Categorie,
 } from '@/lib/api';
-import { FaBook, FaClock, FaCheckCircle, FaSearch, FaTimes, FaInbox, FaArrowRight, FaInfoCircle, FaCalendarAlt, FaBarcode, FaBuilding, FaBookmark } from 'react-icons/fa';
+import { FaBook, FaClock, FaCheckCircle, FaSearch, FaTimes, FaInfoCircle, FaBookmark, FaFilter } from 'react-icons/fa';
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { AxiosError } from 'axios';
 
 type BookStatus = 'DISPONIBLE' | 'PENDING_VALIDATION' | 'RESERVABLE' | 'ALREADY_BORROWED' | 'ALREADY_RESERVED' | 'INDISPONIBLE';
+
+const CATEGORY_LABELS: Record<string, string> = {
+  ROMAN: 'Roman', SCIENCE_FICTION: 'Sci-Fi', FANTASY: 'Fantasy',
+  POLICIER: 'Policier', BIOGRAPHIE: 'Biographie', HISTOIRE: 'Histoire',
+  SCIENCE: 'Science', DEVELOPPEMENT_PERSONNEL: 'Dev. Personnel',
+  JEUNESSE: 'Jeunesse', PHILOSOPHIE: 'Philo', INFORMATIQUE: 'Info',
+};
+
+const STATUS_CONFIG: Record<BookStatus, { label: string; cls: string }> = {
+  DISPONIBLE:         { label: 'Disponible',  cls: 'bg-emerald-500 text-white' },
+  PENDING_VALIDATION: { label: 'À valider',   cls: 'bg-amber-500 text-white' },
+  ALREADY_BORROWED:   { label: 'En lecture',  cls: 'bg-blue-500 text-white' },
+  ALREADY_RESERVED:   { label: 'Réservé',     cls: 'bg-purple-500 text-white' },
+  RESERVABLE:         { label: 'Réservable',  cls: 'bg-orange-500 text-white' },
+  INDISPONIBLE:       { label: 'Indisponible',cls: 'bg-slate-400 text-white' },
+};
 
 function getBookStatus(livre: Livre, emprunts: Emprunt[], reservations: Reservation[]): BookStatus {
   // 1. On vérifie d'abord si l'utilisateur a une demande en attente pour ce livre
@@ -46,6 +62,7 @@ export default function StudentDashboard() {
   const [isLoadingData, setIsLoadingData] = useState(true);
   const [actionLoading, setActionLoading] = useState<number | null>(null);
   const [selectedBook, setSelectedBook] = useState<Livre | null>(null);
+  const [categoryFilter, setCategoryFilter] = useState('All');
 
   const [livres, setLivres] = useState<Livre[]>([]);
   const [emprunts, setEmprunts] = useState<Emprunt[]>([]);
@@ -152,6 +169,11 @@ export default function StudentDashboard() {
   const activeEmprunts = emprunts.filter(e => e.statut === 'EN_COURS');
   const pastEmprunts = emprunts.filter(e => e.statut === 'RETOURNE');
 
+  const allCategories = useMemo(() => {
+    const cats = Array.from(new Set(livres.map(l => l.categorie).filter(Boolean))) as Categorie[];
+    return cats.sort();
+  }, [livres]);
+
   const filteredLivres = useMemo(() => {
     return livres.filter(livre => {
       const matchesSearch =
@@ -162,9 +184,11 @@ export default function StudentDashboard() {
         availabilityFilter === 'All' ||
         (availabilityFilter === 'available' && status === 'DISPONIBLE') ||
         (availabilityFilter === 'unavailable' && status !== 'DISPONIBLE');
-      return matchesSearch && matchesAvailability;
+      const matchesCategory =
+        categoryFilter === 'All' || livre.categorie === categoryFilter;
+      return matchesSearch && matchesAvailability && matchesCategory;
     });
-  }, [livres, searchQuery, availabilityFilter, emprunts, reservations]);
+  }, [livres, searchQuery, availabilityFilter, categoryFilter, emprunts, reservations]);
 
   const formatDate = (d: string) =>
     new Date(d).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
@@ -173,84 +197,84 @@ export default function StudentDashboard() {
     <div className="min-h-screen bg-slate-50/50">
       <StudentNavbar />
       <main className="pt-20">
-        <section className="py-12 px-4 sm:px-6 lg:px-8 bg-linear-to-r from-[#C41C3B] to-[#8B1220] text-white relative overflow-hidden">
+        <section className="py-8 sm:py-12 px-4 sm:px-6 lg:px-8 bg-linear-to-r from-[#C41C3B] to-[#8B1220] text-white relative overflow-hidden">
           <div className="max-w-6xl mx-auto relative z-10">
             <span className="bg-white/20 text-white text-xs font-bold px-3 py-1 rounded-full border border-white/30 uppercase tracking-widest">
               Portail Lecteur
             </span>
-            <h1 className="text-4xl font-extrabold mt-3 mb-2 font-serif">Mon Espace Lecteur</h1>
-            <p className="text-red-100 font-light">Bienvenue, {user?.nom ?? 'Utilisateur'}</p>
+            <h1 className="text-2xl sm:text-4xl font-extrabold mt-3 mb-2 font-serif">Mon Espace Lecteur</h1>
+            <p className="text-red-100 text-sm sm:text-base font-light">Bienvenue, {user?.nom ?? 'Utilisateur'}</p>
           </div>
         </section>
 
         <div className="max-w-6xl mx-auto px-4">
           {successMessage && (
-            <div className="mt-6 bg-emerald-50 border border-emerald-200 text-emerald-800 px-6 py-4 rounded-xl flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:justify-between shadow-sm">
-              <div className="flex items-center gap-3">
-                <FaCheckCircle className="text-emerald-600 text-xl shrink-0" />
-                <p className="font-semibold text-sm">{successMessage}</p>
+            <div className="mt-4 sm:mt-6 bg-emerald-50 border border-emerald-200 text-emerald-800 px-4 sm:px-6 py-3 sm:py-4 rounded-xl flex items-start gap-3 justify-between shadow-sm">
+              <div className="flex items-center gap-3 min-w-0">
+                <FaCheckCircle className="text-emerald-600 text-lg shrink-0" />
+                <p className="font-semibold text-xs sm:text-sm">{successMessage}</p>
               </div>
-              <button onClick={() => setSuccessMessage(null)} className="text-emerald-500 hover:text-emerald-800 cursor-pointer ml-4"><FaTimes /></button>
+              <button onClick={() => setSuccessMessage(null)} className="text-emerald-500 hover:text-emerald-800 cursor-pointer shrink-0"><FaTimes /></button>
             </div>
           )}
           {errorMessage && (
-            <div className="mt-6 bg-red-50 border border-red-200 text-red-800 px-6 py-4 rounded-xl flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:justify-between shadow-sm">
-              <p className="font-semibold text-sm">{errorMessage}</p>
-              <button onClick={() => setErrorMessage(null)} className="text-red-500 hover:text-red-800 cursor-pointer ml-4"><FaTimes /></button>
+            <div className="mt-4 sm:mt-6 bg-red-50 border border-red-200 text-red-800 px-4 sm:px-6 py-3 sm:py-4 rounded-xl flex items-start gap-3 justify-between shadow-sm">
+              <p className="font-semibold text-xs sm:text-sm min-w-0">{errorMessage}</p>
+              <button onClick={() => setErrorMessage(null)} className="text-red-500 hover:text-red-800 cursor-pointer shrink-0 ml-2"><FaTimes /></button>
             </div>
           )}
         </div>
 
-        <section className="py-10 px-4 sm:px-6 lg:px-8">
+        <section className="py-6 sm:py-10 px-4 sm:px-6 lg:px-8">
           <div className="max-w-6xl mx-auto">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
-              <div className="p-6 bg-white rounded-xl border border-slate-100 shadow-sm">
+            <div className="grid grid-cols-3 gap-3 sm:gap-6 mb-8">
+              <div className="p-3 sm:p-6 bg-white rounded-xl border border-slate-100 shadow-sm">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-slate-500 text-xs font-bold uppercase tracking-wider">Livres Empruntés</p>
-                    <p className="text-4xl font-black mt-2 text-[#C41C3B]">{attenteEmprunts.length + activeEmprunts.length}</p>
+                    <p className="text-slate-500 text-[10px] sm:text-xs font-bold uppercase tracking-wider">Empruntés</p>
+                    <p className="text-2xl sm:text-4xl font-black mt-1 sm:mt-2 text-[#C41C3B]">{attenteEmprunts.length + activeEmprunts.length}</p>
                   </div>
-                  <div className="w-12 h-12 rounded-xl bg-red-50 text-[#C41C3B] flex items-center justify-center text-xl"><FaBook /></div>
+                  <div className="hidden sm:flex w-12 h-12 rounded-xl bg-red-50 text-[#C41C3B] items-center justify-center text-xl"><FaBook /></div>
                 </div>
               </div>
-              <div className="p-6 bg-white rounded-xl border border-slate-100 shadow-sm">
+              <div className="p-3 sm:p-6 bg-white rounded-xl border border-slate-100 shadow-sm">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-slate-500 text-xs font-bold uppercase tracking-wider">Réservations Actives</p>
-                    <p className="text-4xl font-black mt-2 text-orange-500">{activeReservations.length}</p>
+                    <p className="text-slate-500 text-[10px] sm:text-xs font-bold uppercase tracking-wider">Réservations</p>
+                    <p className="text-2xl sm:text-4xl font-black mt-1 sm:mt-2 text-orange-500">{activeReservations.length}</p>
                   </div>
-                  <div className="w-12 h-12 rounded-xl bg-orange-50 text-orange-500 flex items-center justify-center text-xl"><FaClock /></div>
+                  <div className="hidden sm:flex w-12 h-12 rounded-xl bg-orange-50 text-orange-500 items-center justify-center text-xl"><FaClock /></div>
                 </div>
               </div>
-              <div className="p-6 bg-white rounded-xl border border-slate-100 shadow-sm">
+              <div className="p-3 sm:p-6 bg-white rounded-xl border border-slate-100 shadow-sm">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-slate-500 text-xs font-bold uppercase tracking-wider">Emprunts Passés</p>
-                    <p className="text-4xl font-black mt-2 text-slate-700">{pastEmprunts.length}</p>
+                    <p className="text-slate-500 text-[10px] sm:text-xs font-bold uppercase tracking-wider">Historique</p>
+                    <p className="text-2xl sm:text-4xl font-black mt-1 sm:mt-2 text-slate-700">{pastEmprunts.length}</p>
                   </div>
-                  <div className="w-12 h-12 rounded-xl bg-slate-100 text-slate-500 flex items-center justify-center text-xl"><FaCheckCircle /></div>
+                  <div className="hidden sm:flex w-12 h-12 rounded-xl bg-slate-100 text-slate-500 items-center justify-center text-xl"><FaCheckCircle /></div>
                 </div>
               </div>
             </div>
 
-            <div className="mb-8 border-b border-slate-200 overflow-x-auto">
-              <div className="flex gap-4 min-w-max">
+            <div className="mb-6 sm:mb-8 border-b border-slate-200 overflow-x-auto">
+              <div className="flex gap-1 sm:gap-4 min-w-max">
                 {[
-                  { id: 'catalog', label: 'Catalogue', icon: FaSearch, activeColor: 'text-blue-600 border-blue-600', count: 0 },
-                  { id: 'borrowings', label: 'Mes Emprunts', icon: FaBook, activeColor: 'text-[#C41C3B] border-[#C41C3B]', count: attenteEmprunts.length + activeEmprunts.length },
-                  { id: 'reservations', label: 'Mes Réservations', icon: FaClock, activeColor: 'text-orange-500 border-orange-500', count: activeReservations.length },
+                  { id: 'catalog',      label: 'Catalogue',    icon: FaSearch, activeColor: 'text-blue-600 border-blue-600',      count: 0 },
+                  { id: 'borrowings',   label: 'Mes Emprunts', icon: FaBook,   activeColor: 'text-[#C41C3B] border-[#C41C3B]',   count: attenteEmprunts.length + activeEmprunts.length },
+                  { id: 'reservations', label: 'Réservations', icon: FaClock,  activeColor: 'text-orange-500 border-orange-500',  count: activeReservations.length },
                 ].map((tab) => (
                   <button
                     key={tab.id}
                     onClick={() => setActiveTab(tab.id)}
-                    className={`pb-4 font-bold whitespace-nowrap flex items-center gap-2 border-b-2 transition-all cursor-pointer ${
+                    className={`pb-3 sm:pb-4 px-1 sm:px-0 font-bold whitespace-nowrap flex items-center gap-1.5 sm:gap-2 border-b-2 transition-all cursor-pointer text-xs sm:text-sm ${
                       activeTab === tab.id ? tab.activeColor : 'border-transparent text-slate-500 hover:text-slate-800'
                     }`}
                   >
-                    <tab.icon className="text-xs" />
+                    <tab.icon className="text-[11px] sm:text-xs shrink-0" />
                     {tab.label}
                     {tab.count > 0 && (
-                      <span className={`text-xs px-1.5 py-0.5 rounded-full font-bold ${
+                      <span className={`text-[10px] sm:text-xs px-1.5 py-0.5 rounded-full font-bold ${
                         tab.id === 'reservations' ? 'bg-orange-100 text-orange-600' : 'bg-red-100 text-[#C41C3B]'
                       }`}>{tab.count}</span>
                     )}
@@ -261,79 +285,128 @@ export default function StudentDashboard() {
 
             {!isLoadingData && (
               <>
-                {/* CATALOGUE */}
+                {/* ── CATALOGUE ── */}
                 {activeTab === 'catalog' && (
                   <div>
-                    <div className="mb-8">
-                      <h2 className="text-2xl font-bold mb-4 text-slate-900 font-serif">Catalogue des ouvrages</h2>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                        <div className="relative">
-                          <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+                    <div className="mb-6">
+                      <h2 className="text-xl sm:text-2xl font-bold mb-4 text-slate-900 font-serif">Catalogue des ouvrages</h2>
+                      <div className="flex flex-col sm:flex-row gap-3">
+                        <div className="relative flex-1">
+                          <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs" />
                           <input
                             type="text"
-                            placeholder="Rechercher par titre, auteur..."
+                            placeholder="Rechercher par titre, auteur…"
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
-                            className="w-full pl-12 pr-4 py-3 border border-slate-200 rounded-lg text-slate-800 focus:outline-none focus:border-[#C41C3B] text-sm bg-white"
+                            className="w-full pl-9 pr-4 py-2.5 border border-slate-200 rounded-xl text-slate-800 focus:outline-none focus:border-[#C41C3B] text-sm bg-white"
                           />
                         </div>
-                        <select
-                          value={availabilityFilter}
-                          onChange={(e) => setAvailabilityFilter(e.target.value)}
-                          className="px-4 py-3 border border-slate-200 rounded-lg text-slate-700 text-sm bg-white cursor-pointer focus:outline-none focus:border-[#C41C3B]"
-                        >
-                          <option value="All">Tous les livres</option>
-                          <option value="available">Disponibles</option>
-                          <option value="unavailable">Indisponibles</option>
-                        </select>
+                        <div className="flex gap-2 sm:gap-3">
+                          <div className="relative">
+                            <FaFilter className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs pointer-events-none" />
+                            <select
+                              value={availabilityFilter}
+                              onChange={(e) => setAvailabilityFilter(e.target.value)}
+                              className="pl-8 pr-3 py-2.5 border border-slate-200 rounded-xl text-slate-700 text-sm bg-white cursor-pointer focus:outline-none focus:border-[#C41C3B]"
+                            >
+                              <option value="All">Tous</option>
+                              <option value="available">Disponibles</option>
+                              <option value="unavailable">Indisponibles</option>
+                            </select>
+                          </div>
+                          {allCategories.length > 0 && (
+                            <select
+                              value={categoryFilter}
+                              onChange={(e) => setCategoryFilter(e.target.value)}
+                              className="px-3 py-2.5 border border-slate-200 rounded-xl text-slate-700 text-sm bg-white cursor-pointer focus:outline-none focus:border-[#C41C3B] max-w-[140px]"
+                            >
+                              <option value="All">Catégories</option>
+                              {allCategories.map(c => (
+                                <option key={c} value={c}>{CATEGORY_LABELS[c] ?? c}</option>
+                              ))}
+                            </select>
+                          )}
+                        </div>
                       </div>
+                      <p className="text-xs text-slate-400 mt-3">
+                        {filteredLivres.length} ouvrage{filteredLivres.length !== 1 ? 's' : ''} trouvé{filteredLivres.length !== 1 ? 's' : ''}
+                      </p>
                     </div>
-                    
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      {filteredLivres.map((livre) => {
-                        const status = getBookStatus(livre, emprunts, reservations);
-                        const isLoading = actionLoading === livre.id;
-                        return (
-                          <div key={livre.id} className="p-5 bg-white rounded-xl border border-slate-100 hover:shadow-lg transition-all flex flex-col sm:flex-row gap-5">
-                            <div className="w-24 h-36 bg-slate-100 rounded-lg overflow-hidden shrink-0 border border-slate-200/60 relative shadow-sm">
-                              {livre.imageUrl ? (
-                                <img src={livre.imageUrl} alt={livre.titre} className="w-full h-full object-cover" />
-                              ) : (
-                                <div className="w-full h-full flex flex-col items-center justify-center text-slate-400 p-2 text-center">
-                                  <FaBook className="text-2xl mb-1 text-slate-300" />
-                                  <span className="text-[10px] font-semibold">Pas d'image</span>
-                                </div>
-                              )}
-                            </div>
-                            <div className="flex-1 flex flex-col justify-between">
-                              <div>
-                                <div className="flex justify-between items-start gap-2 mb-1">
-                                  <h3 className="font-bold text-base text-slate-900 line-clamp-2 leading-tight">{livre.titre}</h3>
-                                  <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full shrink-0 ${
-                                    status === 'DISPONIBLE' ? 'bg-emerald-50 text-emerald-700' :
-                                    status === 'PENDING_VALIDATION' ? 'bg-amber-50 text-amber-700' : 
-                                    status === 'ALREADY_BORROWED' ? 'bg-blue-50 text-blue-700' : 'bg-slate-100 text-slate-500'
-                                  }`}>
-                                    {status === 'DISPONIBLE' ? 'Disponible' : 
-                                     status === 'PENDING_VALIDATION' ? 'À valider à l\'accueil' : 
-                                     status === 'ALREADY_BORROWED' ? 'En votre possession' : 'Indisponible'}
+
+                    {filteredLivres.length === 0 ? (
+                      <div className="border border-dashed border-slate-200 rounded-2xl py-16 text-center bg-white">
+                        <FaBook className="text-4xl text-slate-200 mx-auto mb-3" />
+                        <p className="text-slate-400 font-medium">Aucun ouvrage ne correspond à vos filtres.</p>
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4">
+                        {filteredLivres.map((livre) => {
+                          const status = getBookStatus(livre, emprunts, reservations);
+                          const isLoading = actionLoading === livre.id;
+                          const sc = STATUS_CONFIG[status];
+                          return (
+                            <div key={livre.id} className="bg-white rounded-xl border border-slate-100 hover:shadow-lg transition-all overflow-hidden flex flex-col group">
+                              {/* Cover */}
+                              <div className="relative w-full aspect-[2/3] bg-slate-100 overflow-hidden">
+                                {livre.imageUrl ? (
+                                  <img
+                                    src={livre.imageUrl}
+                                    alt={livre.titre}
+                                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                                  />
+                                ) : (
+                                  <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-slate-100 to-slate-200 p-2 text-center">
+                                    <FaBook className="text-2xl sm:text-3xl mb-1 sm:mb-2 text-slate-300" />
+                                    <span className="text-[9px] sm:text-[10px] font-semibold text-slate-400 line-clamp-3 leading-tight">{livre.titre}</span>
+                                  </div>
+                                )}
+                                <span className={`absolute top-1.5 left-1.5 text-[9px] sm:text-[10px] font-bold px-1.5 py-0.5 rounded-full ${sc.cls}`}>
+                                  {sc.label}
+                                </span>
+                                {livre.categorie && (
+                                  <span className="absolute bottom-1.5 right-1.5 text-[8px] sm:text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-black/40 text-white backdrop-blur-sm">
+                                    {CATEGORY_LABELS[livre.categorie] ?? livre.categorie}
                                   </span>
-                                </div>
-                                <p className="text-slate-500 text-sm font-medium">{livre.auteur}</p>
-                              </div>
-                              <div className="flex flex-col sm:flex-row gap-2 mt-4">
-                                <button onClick={() => setSelectedBook(livre)} className="px-3 py-2 bg-slate-100 text-slate-700 rounded-lg font-bold text-xs flex items-center justify-center gap-1.5"><FaInfoCircle /> Détails</button>
-                                {status === 'DISPONIBLE' && (
-                                  <button disabled={isLoading} onClick={() => handleBorrow(livre.id)} className="flex-1 py-2 rounded-lg font-bold text-xs bg-[#C41C3B] text-white flex items-center justify-center gap-1.5">
-                                    {isLoading ? <span className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin inline-block" /> : <FaBook />} Demande d'emprunt
-                                  </button>
                                 )}
                               </div>
+                              {/* Info */}
+                              <div className="p-2 sm:p-3 flex flex-col flex-1">
+                                <h3 className="font-bold text-[11px] sm:text-xs text-slate-900 line-clamp-2 leading-tight mb-0.5">{livre.titre}</h3>
+                                <p className="text-slate-400 text-[10px] sm:text-[11px] line-clamp-1 mb-2 flex-1">{livre.auteur}</p>
+                                <div className="flex flex-col gap-1">
+                                  <button
+                                    onClick={() => setSelectedBook(livre)}
+                                    className="w-full py-1.5 bg-slate-100 text-slate-700 rounded-lg font-semibold text-[10px] sm:text-[11px] flex items-center justify-center gap-1 hover:bg-slate-200 transition-colors"
+                                  >
+                                    <FaInfoCircle className="text-[9px]" /> Détails
+                                  </button>
+                                  {status === 'DISPONIBLE' && (
+                                    <button
+                                      disabled={isLoading}
+                                      onClick={() => handleBorrow(livre.id)}
+                                      className="w-full py-1.5 rounded-lg font-bold text-[10px] sm:text-[11px] bg-[#C41C3B] text-white flex items-center justify-center gap-1 hover:bg-[#a81430] transition-colors disabled:opacity-60"
+                                    >
+                                      {isLoading ? <span className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <FaBook className="text-[9px]" />}
+                                      Emprunter
+                                    </button>
+                                  )}
+                                  {status === 'RESERVABLE' && (
+                                    <button
+                                      disabled={isLoading}
+                                      onClick={() => handleReserve(livre.id)}
+                                      className="w-full py-1.5 rounded-lg font-bold text-[10px] sm:text-[11px] bg-orange-500 text-white flex items-center justify-center gap-1 hover:bg-orange-600 transition-colors disabled:opacity-60"
+                                    >
+                                      {isLoading ? <span className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <FaBookmark className="text-[9px]" />}
+                                      Réserver
+                                    </button>
+                                  )}
+                                </div>
+                              </div>
                             </div>
-                          </div>
-                        );
-                      })}
-                    </div>
+                          );
+                        })}
+                      </div>
+                    )}
                   </div>
                 )}
 
@@ -427,23 +500,60 @@ export default function StudentDashboard() {
         </section>
       </main>
 
-      {/* Détails Modal */}
+      {/* ── Modal Détails ── */}
       {selectedBook && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl max-w-xl w-full p-6 relative flex flex-col sm:flex-row gap-6 max-h-[90vh] overflow-y-auto">
-            <button onClick={() => setSelectedBook(null)} className="absolute top-4 right-4 p-2 bg-slate-50 rounded-full"><FaTimes /></button>
-            <div className="w-32 h-48 bg-slate-100 rounded-xl overflow-hidden shrink-0 border">
-              {selectedBook.imageUrl && <img src={selectedBook.imageUrl} alt={selectedBook.titre} className="w-full h-full object-cover" />}
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-end sm:items-center justify-center z-50 p-0 sm:p-4">
+          <div className="bg-white rounded-t-3xl sm:rounded-2xl w-full sm:max-w-lg p-5 sm:p-6 relative max-h-[90vh] overflow-y-auto">
+            <button
+              onClick={() => setSelectedBook(null)}
+              className="absolute top-4 right-4 p-2 bg-slate-100 rounded-full text-slate-500 hover:bg-slate-200"
+            >
+              <FaTimes />
+            </button>
+            <div className="flex gap-4 sm:gap-6">
+              <div className="w-24 sm:w-32 h-36 sm:h-48 bg-slate-100 rounded-xl overflow-hidden shrink-0 border border-slate-200">
+                {selectedBook.imageUrl ? (
+                  <img src={selectedBook.imageUrl} alt={selectedBook.titre} className="w-full h-full object-cover" />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center"><FaBook className="text-3xl text-slate-300" /></div>
+                )}
+              </div>
+              <div className="flex-1 min-w-0">
+                {selectedBook.categorie && (
+                  <span className="text-xs font-bold uppercase tracking-wider text-[#C41C3B]">
+                    {CATEGORY_LABELS[selectedBook.categorie] ?? selectedBook.categorie}
+                  </span>
+                )}
+                <h2 className="text-base sm:text-xl font-bold text-slate-900 mt-1 font-serif leading-tight">{selectedBook.titre}</h2>
+                <p className="text-slate-500 text-sm">par {selectedBook.auteur}</p>
+                {selectedBook.annee && <p className="text-xs text-slate-400 mt-1">{selectedBook.annee}</p>}
+                {selectedBook.editeur && <p className="text-xs text-slate-400">{selectedBook.editeur}</p>}
+              </div>
             </div>
-            <div>
-              <span className="text-xs font-bold uppercase tracking-wider text-[#C41C3B]">{selectedBook.categorie || 'Général'}</span>
-              <h2 className="text-xl font-bold text-slate-900 mt-1 font-serif">{selectedBook.titre}</h2>
-              <p className="text-slate-500 text-sm mb-4">par {selectedBook.auteur}</p>
+            <div className="mt-5 flex flex-col gap-2">
               {getBookStatus(selectedBook, emprunts, reservations) === 'DISPONIBLE' && (
-                <button onClick={() => handleBorrow(selectedBook.id)} className="w-full py-2.5 bg-[#C41C3B] text-white font-bold rounded-xl text-xs flex items-center justify-center gap-2">
-                  <FaBook /> Confirmer la demande d'emprunt
+                <button
+                  onClick={() => handleBorrow(selectedBook.id)}
+                  disabled={actionLoading === selectedBook.id}
+                  className="w-full py-3 bg-[#C41C3B] text-white font-bold rounded-xl text-sm flex items-center justify-center gap-2 hover:bg-[#a81430] transition-colors disabled:opacity-60"
+                >
+                  {actionLoading === selectedBook.id ? <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <FaBook />}
+                  Confirmer la demande d'emprunt
                 </button>
               )}
+              {getBookStatus(selectedBook, emprunts, reservations) === 'RESERVABLE' && (
+                <button
+                  onClick={() => handleReserve(selectedBook.id)}
+                  disabled={actionLoading === selectedBook.id}
+                  className="w-full py-3 bg-orange-500 text-white font-bold rounded-xl text-sm flex items-center justify-center gap-2 hover:bg-orange-600 transition-colors disabled:opacity-60"
+                >
+                  {actionLoading === selectedBook.id ? <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <FaBookmark />}
+                  Réserver ce livre
+                </button>
+              )}
+              <button onClick={() => setSelectedBook(null)} className="w-full py-2.5 border border-slate-200 text-slate-600 font-semibold rounded-xl text-sm hover:bg-slate-50 transition-colors">
+                Fermer
+              </button>
             </div>
           </div>
         </div>
