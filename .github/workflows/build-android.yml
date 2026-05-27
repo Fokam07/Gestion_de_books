@@ -128,14 +128,25 @@ jobs:
           ./node_modules/.bin/cap sync android
 
       #
-      # 10. Rendre Gradle exécutable
+      # 10. Générer les icônes Android depuis assets/icon.png
+      #
+      - name: Génération des icônes Android
+        working-directory: frontend
+        run: |
+          npx @capacitor/assets generate --android \
+            --iconBackgroundColor '#fffaf8' \
+            --splashBackgroundColor '#fffaf8' \
+            --assetPath assets
+
+      #
+      # 11. Rendre Gradle exécutable
       #
       - name: Permissions Gradle
         working-directory: frontend/android
         run: chmod +x gradlew
 
       #
-      # 11. Compiler l'APK Debug
+      # 12. Compiler l'APK Debug
       #
       - name: Compilation APK Debug
         working-directory: frontend/android
@@ -145,7 +156,7 @@ jobs:
             -Dorg.gradle.jvmargs="-Xmx3g"
 
       #
-      # 12. Uploader l'APK comme artefact téléchargeable
+      # 13. Uploader l'APK comme artefact téléchargeable
       #
       - name: Upload APK
         uses: actions/upload-artifact@v4
@@ -155,7 +166,7 @@ jobs:
           retention-days: 30
 
       #
-      # 13. Résumé du build
+      # 14. Résumé du build
       #
       - name: Résumé du build
         if: success()
