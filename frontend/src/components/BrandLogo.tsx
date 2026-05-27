@@ -41,7 +41,6 @@ export default function BrandLogo({ variant = 'default', compact = false }: Bran
           height={compact ? 34 : 40}
           priority
           className="object-contain"
-          style={{ width: 'auto', height: 'auto' }}
         />
       </div>
       <div className="min-w-0">
