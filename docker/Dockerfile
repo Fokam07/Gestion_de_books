@@ -1,5 +1,5 @@
 #
-# Image de build Android — Ubuntu 22.04 + Java 17 + Node 20 + Android SDK 34
+# Image de build Android — Ubuntu 22.04 + Java 21 + Node 20 + Android SDK 34
 #
 FROM ubuntu:22.04
 
@@ -13,14 +13,14 @@ RUN apt-get update && apt-get install -y \
     wget \
     unzip \
     git \
-    openjdk-17-jdk \
+    openjdk-21-jdk \
     libc6-i386 \
     lib32gcc-s1 \
     lib32stdc++6 \
     lib32z1 \
     && rm -rf /var/lib/apt/lists/*
 
-ENV JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
+ENV JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64
 ENV PATH=$JAVA_HOME/bin:$PATH
 
 #
