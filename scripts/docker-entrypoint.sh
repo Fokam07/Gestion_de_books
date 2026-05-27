@@ -18,6 +18,28 @@ APP_NAME_VALUE="${APP_NAME:-Shelfio}"
 APP_ID_VALUE="${APP_ID:-com.shelfio.app}"
 API_URL_VALUE="${NEXT_PUBLIC_API_URL:-https://gestion-de-books.onrender.com}"
 
+# ── Android SDK (volume persistant — installé une seule fois) ──────────────
+log_step "Vérification du Android SDK..."
+if [ ! -d "$ANDROID_HOME/cmdline-tools/latest" ]; then
+  log_step "Téléchargement des Android SDK command line tools..."
+  mkdir -p "$ANDROID_HOME/cmdline-tools"
+  wget -q https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip \
+      -O /tmp/cmdline-tools.zip
+  unzip -q /tmp/cmdline-tools.zip -d /tmp
+  mv /tmp/cmdline-tools "$ANDROID_HOME/cmdline-tools/latest"
+  rm /tmp/cmdline-tools.zip
+  log_ok "Command line tools installés"
+fi
+
+if [ ! -d "$ANDROID_HOME/platforms/android-35" ]; then
+  log_step "Installation des composants Android SDK (android-35)..."
+  yes | sdkmanager --licenses > /dev/null 2>&1 || true
+  sdkmanager "platform-tools" "platforms;android-35" "build-tools;35.0.0"
+  log_ok "Android SDK installé"
+else
+  log_ok "Android SDK déjà présent (volume cache)"
+fi
+
 log_step "Installation des dépendances Node.js..."
 cd /workspace/frontend
 npm ci --legacy-peer-deps 2>/dev/null || npm install --legacy-peer-deps

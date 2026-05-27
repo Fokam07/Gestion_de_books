@@ -10,6 +10,7 @@ services:
       - ../generated:/workspace/generated
       - android-npm-cache:/root/.npm
       - android-gradle-cache:/root/.gradle
+      - android-sdk:/opt/android-sdk
     environment:
       - APP_NAME=${APP_NAME:-Shelfio}
       - APP_ID=${APP_ID:-com.shelfio.app}
@@ -18,3 +19,4 @@ services:
 volumes:
   android-npm-cache:
   android-gradle-cache:
+  android-sdk:

@@ -1,7 +1,8 @@
 #
-# Image de build Android — Ubuntu 22.04 + Java 21 + Node 20 + Android SDK 34
+# Image de build Android — eclipse-temurin:21 (JDK 21) + Node 20
+# Le SDK Android est installé au runtime dans un volume persistant
 #
-FROM ubuntu:22.04
+FROM eclipse-temurin:21-jdk-jammy
 
 ENV DEBIAN_FRONTEND=noninteractive
 
@@ -13,42 +14,22 @@ RUN apt-get update && apt-get install -y \
     wget \
     unzip \
     git \
-    openjdk-21-jdk \
-    libc6-i386 \
-    lib32gcc-s1 \
-    lib32stdc++6 \
-    lib32z1 \
+    && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
-
-ENV JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64
-ENV PATH=$JAVA_HOME/bin:$PATH
 
 #
 # 2. Node.js 20
 #
 RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
     && apt-get install -y nodejs \
+    && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
 #
-# 3. Android SDK Command Line Tools
+# 3. Android SDK paths (volume persistant monté par docker-compose)
 #
 ENV ANDROID_HOME=/opt/android-sdk
 ENV PATH=$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/platform-tools:$PATH
-
-RUN mkdir -p $ANDROID_HOME/cmdline-tools && \
-    wget -q https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip \
-        -O /tmp/cmdline-tools.zip && \
-    unzip -q /tmp/cmdline-tools.zip -d /tmp && \
-    mv /tmp/cmdline-tools $ANDROID_HOME/cmdline-tools/latest && \
-    rm /tmp/cmdline-tools.zip
-
-# Accepter les licences et installer les composants nécessaires
-RUN yes | sdkmanager --licenses && \
-    sdkmanager \
-        "platform-tools" \
-        "platforms;android-34" \
-        "build-tools;34.0.0"
 
 #
 # 4. Répertoire de travail
