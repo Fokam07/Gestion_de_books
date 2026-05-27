@@ -44,6 +44,16 @@ log_step "Synchronisation des assets web vers Android..."
 APP_NAME="$APP_NAME_VALUE" APP_ID="$APP_ID_VALUE" NEXT_PUBLIC_API_URL="$API_URL_VALUE" npx cap sync android
 log_ok "Synchronisation terminée"
 
+log_step "Reconstruction du module sharp pour Linux x64..."
+# sharp est un module natif - doit être recompilé pour Linux (node_modules vient du host Windows)
+SHARP_DIR="/workspace/frontend/node_modules/@capacitor/assets/node_modules"
+if [ -d "$SHARP_DIR" ]; then
+  cd "$SHARP_DIR"
+  npm install --platform=linux --arch=x64 sharp --no-save 2>&1 | tail -5
+  cd /workspace/frontend
+fi
+log_ok "Module sharp linux-x64 prêt"
+
 log_step "Génération des icônes Android (Shelfio)..."
 npx @capacitor/assets generate --android \
   --iconBackgroundColor '#fffaf8' \
