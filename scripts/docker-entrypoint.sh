@@ -20,10 +20,11 @@ API_URL_VALUE="${NEXT_PUBLIC_API_URL:-https://gestion-de-books.onrender.com}"
 
 log_step "Installation des dépendances Node.js..."
 cd /workspace/frontend
-npm ci --prefer-offline 2>/dev/null || npm install
+npm ci --legacy-peer-deps 2>/dev/null || npm install --legacy-peer-deps
 log_ok "Dépendances installées"
 
 log_step "Build Next.js en mode export statique..."
+rm -rf out/
 BUILD_TARGET=capacitor NEXT_PUBLIC_API_URL="$API_URL_VALUE" npm run build:mobile
 log_ok "Build Next.js terminé — dossier out/ généré"
 
@@ -42,6 +43,13 @@ fi
 log_step "Synchronisation des assets web vers Android..."
 APP_NAME="$APP_NAME_VALUE" APP_ID="$APP_ID_VALUE" NEXT_PUBLIC_API_URL="$API_URL_VALUE" npx cap sync android
 log_ok "Synchronisation terminée"
+
+log_step "Génération des icônes Android (Shelfio)..."
+npx @capacitor/assets generate --android \
+  --iconBackgroundColor '#fffaf8' \
+  --splashBackgroundColor '#fffaf8' \
+  --assetPath assets
+log_ok "Icônes Android générées"
 
 log_step "Compilation de l'APK Android..."
 cd /workspace/frontend/android
