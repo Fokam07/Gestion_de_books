@@ -14,6 +14,9 @@
 6. [API REST Backend](#6-api-rest-backend)
 7. [Frontend Next.js](#7-frontend-nextjs)
 8. [Application mobile (APK Android)](#8-application-mobile-apk-android)
+   - [Approche 1 — Build local avec Docker](#approche-1--build-local-avec-docker)
+   - [Approche 2 — Build CI/CD avec GitHub Actions](#approche-2--build-cicd-avec-github-actions)
+   - [Comparatif des deux approches](#comparatif-des-deux-approches)
 9. [Authentification & Sécurité](#9-authentification--sécurité)
 10. [Tests](#10-tests)
 11. [Déploiement](#11-déploiement)
@@ -305,26 +308,28 @@ Le client Axios (`src/lib/api.ts`) gère automatiquement le renouvellement du JW
 
 ## 8. Application mobile (APK Android)
 
-L'application mobile est générée depuis le build Next.js exporté en site statique (`next export`).
+L'application mobile est générée depuis le build Next.js exporté en site statique (`output: 'export'`), encapsulé par **Capacitor 7** dans une coque Android native compilée avec Gradle.
 
-### Flux de build
+### Flux de build commun aux deux approches
 
 ```
-next build (output: 'export') → out/
+Code source Next.js
     ↓
-npx cap sync android
+next build  (BUILD_TARGET=capacitor → output: 'export')
+    ↓  dossier out/ (HTML/CSS/JS statiques)
+npx cap sync android  (copie out/ dans android/app/src/main/assets/public)
     ↓
-@capacitor/assets generate (icônes + splash)
+@capacitor/assets generate  (icônes + splash screen Android)
     ↓
-./gradlew assembleDebug
+./gradlew assembleDebug  (Gradle + Android SDK → APK)
     ↓
-app-debug.apk (≈ 14 MB)
+app-debug.apk  (≈ 14 MB)
 ```
 
 ### Configuration Capacitor
 
 ```typescript
-// capacitor.config.ts
+// frontend/capacitor.config.ts
 {
   appId: 'com.shelfio.app',
   appName: 'Shelfio',
@@ -333,27 +338,161 @@ app-debug.apk (≈ 14 MB)
 }
 ```
 
-### Build local (Docker)
+L'option `output: 'export'` dans `next.config.ts` est activée **uniquement** quand `BUILD_TARGET=capacitor`, afin de garder le déploiement Vercel (SSR) intact.
 
-Prérequis : Docker avec support Linux containers (WSL 2 sur Windows).
+---
+
+### Approche 1 — Build local avec Docker
+
+#### Pourquoi Docker ?
+
+Générer un APK Android requiert Java 21, Node.js 20, le SDK Android (≈ 300 MB) et Gradle. Ces outils ne sont pas présents sur toutes les machines de développement. Docker permet de **reproduire un environnement de build identique** sans rien installer sur le poste, grâce à un conteneur Linux éphémère.
+
+#### Architecture Docker
+
+| Fichier | Rôle |
+|---------|------|
+| `docker/Dockerfile` | Image de base : `eclipse-temurin:21-jdk-jammy` + Node.js 20 |
+| `docker/docker-compose.yml` | Service `android-builder` + 3 volumes persistants |
+| `scripts/docker-entrypoint.sh` | Script exécuté dans le conteneur, orchestre le build |
+
+#### Image Docker (`docker/Dockerfile`)
+
+```dockerfile
+FROM eclipse-temurin:21-jdk-jammy
+# Node.js 20 via NodeSource
+RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
+    && apt-get install -y nodejs
+ENV ANDROID_HOME=/opt/android-sdk
+ENV PATH=$PATH:$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/platform-tools
+COPY scripts/docker-entrypoint.sh /entrypoint.sh
+ENTRYPOINT ["/entrypoint.sh"]
+```
+
+L'image embarque **uniquement** Java 21 et Node.js. Le SDK Android n'est **pas** inclus dans l'image pour limiter sa taille — il est installé au premier lancement dans un volume Docker persistant (`android-sdk`).
+
+#### Volumes Docker
+
+```yaml
+# docker/docker-compose.yml
+volumes:
+  android-sdk:        # SDK Android (platform-tools, android-35, build-tools)
+  android-gradle-cache:  # Cache Gradle (~/.gradle)
+  android-npm-cache:     # Cache npm
+```
+
+Ces volumes survivent entre les runs : le SDK n'est téléchargé qu'une seule fois (~300 MB), les builds suivants sont ~3× plus rapides.
+
+#### Script de build (`scripts/docker-entrypoint.sh`)
+
+Le script s'exécute dans le conteneur et enchaîne les étapes :
+
+1. **Vérification du SDK Android** — si le volume `android-sdk` ne contient pas `cmdline-tools/latest`, télécharge `commandlinetools-linux-11076708_latest.zip` et installe `platform-tools`, `platforms;android-35`, `build-tools;35.0.0`
+2. **`npm ci`** — installe les dépendances Node.js du frontend
+3. **`next build`** (avec `BUILD_TARGET=capacitor`) — génère le dossier `out/`
+4. **`cap add android`** / **`cap sync android`** — initialise/synchronise la plateforme Android
+5. **Rebuild de `sharp`** pour Linux x64 (module natif compilé sur Windows host → recompilé dans le conteneur)
+6. **`@capacitor/assets generate`** — génère icônes et splash screen depuis `assets/icon.png`
+7. **`./gradlew assembleDebug`** — compile l'APK Android
+8. **Copie** `app-debug.apk` → `generated/builds/apk/app-debug.apk`
+
+#### Commandes
 
 ```bash
 cd Gestion_de_books
 
-# Première fois (télécharge l'image + Android SDK ~10 min)
+# 1re fois — construit l'image Docker (~5 min selon connexion)
 docker compose -f docker/docker-compose.yml build
+
+# Lance le build APK (SDK téléchargé au 1er run ~10 min, puis ~3 min)
 docker compose -f docker/docker-compose.yml run --rm android-builder
 
-# Runs suivants (~3 min, SDK en cache dans le volume)
-docker compose -f docker/docker-compose.yml run --rm android-builder
+# Rebuild image depuis zéro (cache supprimé)
+docker builder prune -af
+docker compose -f docker/docker-compose.yml build --no-cache
 ```
 
-L'APK est généré dans `generated/builds/apk/app-debug.apk`.
+L'APK est disponible dans `generated/builds/apk/app-debug.apk`.
 
-### Build CI/CD (GitHub Actions)
+#### Prérequis
 
-Le workflow `.github/workflows/build-android.yml` se déclenche sur chaque push sur `main` ou `prince`.  
-L'APK est disponible dans les **Artifacts** de chaque run GitHub Actions.
+- Docker Desktop (Windows) avec **WSL 2** activé, ou Docker Engine sur Linux/macOS
+- ~1 GB d'espace disque libre (image + volumes SDK)
+- Connexion internet pour le premier téléchargement du SDK
+
+---
+
+### Approche 2 — Build CI/CD avec GitHub Actions
+
+#### Pourquoi GitHub Actions ?
+
+GitHub Actions permet de **générer l'APK automatiquement dans le cloud** à chaque push, sans aucune installation locale. Les runners `ubuntu-latest` fournis par GitHub disposent déjà de l'environnement Linux, du SDK Android de base et de Java.
+
+#### Déclencheurs du workflow
+
+```yaml
+# .github/workflows/build-android.yml
+on:
+  push:
+    branches: [main, develop, prince]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:   # Lancement manuel depuis l'interface GitHub
+```
+
+#### Étapes du workflow
+
+| # | Étape GitHub Actions | Description |
+|---|---------------------|-------------|
+| 1 | `actions/checkout@v4` | Cloner le dépôt |
+| 2 | `actions/setup-node@v4` | Node.js 20 avec cache npm |
+| 3 | `actions/setup-java@v4` | JDK 21 (distribution Temurin) |
+| 4 | `sdkmanager` | Installer `platforms;android-34`, `build-tools;34.0.0`, `platform-tools` |
+| 5 | `actions/cache@v4` | Cache Gradle (`~/.gradle/caches` + `wrapper`) |
+| 6 | `npm ci` | Installer les dépendances frontend |
+| 7 | `npm run build` | Build Next.js avec `BUILD_TARGET=capacitor` → `out/` |
+| 8 | Vérification `out/` | Vérifie que le dossier statique a bien été généré |
+| 9 | `cap add` / `cap sync` | Initialisation et synchronisation Capacitor Android |
+| 10 | `@capacitor/assets generate` | Génération icônes + splash |
+| 11 | `chmod +x gradlew` | Permissions Gradle |
+| 12 | `./gradlew assembleDebug` | Compilation APK (`-Xmx3g`) |
+| 13 | `actions/upload-artifact@v4` | Publication APK comme artefact téléchargeable (30 jours) |
+| 14 | Résumé / Notification | Affiche taille, commit, branche dans le résumé du run |
+
+#### Récupérer l'APK depuis GitHub Actions
+
+1. Ouvrir le dépôt sur [github.com](https://github.com/Fokam07/Gestion_de_books)
+2. Aller dans **Actions → Build Android APK**
+3. Cliquer sur un run réussi (✅)
+4. Télécharger l'artefact `app-debug-<sha>.apk` dans la section **Artifacts**
+
+L'APK est retenu **30 jours** par run.
+
+#### Variable d'environnement configurable
+
+| Variable | Défaut | Rôle |
+|----------|--------|------|
+| `vars.NEXT_PUBLIC_API_URL` | `https://gestion-de-books.onrender.com` | URL de l'API backend injectée dans le build |
+| `vars.APP_NAME` | `Shelfio` | Nom de l'application Android |
+| `vars.APP_ID` | `com.shelfio.app` | Identifiant du package Android |
+
+Ces variables se configurent dans **Settings → Variables → Repository variables** sur GitHub.
+
+---
+
+### Comparatif des deux approches
+
+| Critère | Docker (local) | GitHub Actions (CI/CD) |
+|---------|---------------|----------------------|
+| **Environnement** | Conteneur Linux local (WSL 2) | Runner `ubuntu-latest` GitHub |
+| **Déclenchement** | Manuel (`docker compose run`) | Automatique sur push / manuel |
+| **Prérequis** | Docker Desktop + WSL 2 | Aucun (cloud) |
+| **1er build** | ~10 min (télécharge SDK) | ~8 min |
+| **Builds suivants** | ~3 min (SDK en volume) | ~5 min (cache Gradle) |
+| **APK disponible** | `generated/builds/apk/app-debug.apk` | Artifact GitHub (téléchargeable 30j) |
+| **Version Java** | 21 (eclipse-temurin) | 21 (temurin via setup-java) |
+| **Android SDK** | Platform 35 + build-tools 35.0.0 | Platform 34 + build-tools 34.0.0 |
+| **Usage recommandé** | Test local, itérations rapides | Distribution, validation sur push |
 
 ---
 
